@@ -1,0 +1,12 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "outputDirectory": "public",
+  "rewrites": [
+    { "source": "/webhook", "destination": "/api/webhook" }
+  ],
+  "functions": {
+    "api/webhook.ts": {
+      "maxDuration": 30
+    }
+  }
+}
