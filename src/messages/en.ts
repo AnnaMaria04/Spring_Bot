@@ -1,101 +1,107 @@
 import type { GuestMessages } from "./types";
+import { PROPERTY } from "../content/property";
 
 /** English guest interface copy (optional secondary language). */
 export const en: GuestMessages = {
   welcome: (houseName) =>
-    `Welcome to Spring Village 🌿\n\n` +
-    `This is a private chat with your house's administration.\n` +
-    `You can ask for firewood, towels, cleaning, technical help, or any question.\n\n` +
-    `🏡 Your house: ${houseName}\n\n` +
+    `🌲 Spring Village\n\n` +
+    `Welcome to "${houseName}" — your A-frame on the shore of Lake Mikhalyovskoye.\n\n` +
+    `This is a private chat with your hosts. Firewood, towels, the boat, or a tip for the day — ` +
+    `just write, and we'll take care of it.\n\n` +
     `How can we help?`,
 
   menuPrompt: "How can we help?",
 
-  chooseHouse: "Please tell us your house so we know where to route your request.",
-  scanOrChooseHouse:
-    "To help you faster, scan the QR code in the house or type your house number.",
-  askHouseNumber: "Please type your house number as a digit — for example, 3.",
-  houseNotFound:
-    "We couldn't find a house with that number. Please check and type the number again.",
-  houseConfirm: (houseName) => `Your house: ${houseName}. Is that correct?`,
-  houseSwitched: (houseName) => `Done, your house is now: ${houseName}.`,
-  houseKept: (houseName) => `Okay, keeping your house: ${houseName}.`,
-  unknownHouse: "We couldn't detect the house. Please pick your house from the list.",
-  pastStayQuestion:
-    "It looks like your stay has ended. Is this about a past visit or a new booking?",
+  askHouseNumber: "Please type your house number as a digit — for example, 1.",
+  houseNotFound: "We couldn't find a house with that number. Please check and type it again.",
+  houseConfirm: (houseName) => `Your house is "${houseName}". Is that correct?`,
+  scanOrChooseHouse: "Please type your house number so we know where to route your request.",
 
-  requestReceived: "Thank you, we've received your request ✅ An administrator will reply soon.",
-  adminHandling: "An administrator is already handling your request.",
-  needDetails: "Could you add a few more details so we can help faster?",
+  requestReceived: "Thank you, we've received your request ✅ Your hosts see it and will reply shortly.",
   done: "Done ✅ If you need anything else, just write to us here.",
-  unclear:
-    "We didn't quite catch that. You can pick a menu item or simply write your question as a normal message.",
+  unclear: "We didn't quite catch that. Pick a menu item or describe it in words — we'll understand.",
   emergency: (phone) =>
-    `If this is urgent, please call the administrator: ${phone}. We've also notified the administrator.`,
-  photoReceived: "Got the photo, an administrator will take a look shortly.",
-  voiceReceived: "Got your voice message, an administrator will listen shortly.",
-  fileReceived:
-    "Got the file. If it's urgent, please also send a short text description.",
-  waitingReassure: "Your message is with the administrator. Thanks for waiting.",
+    `If it's urgent, call your host: ${phone}. We've already received your message.`,
+  photoReceived: "Got the photo — your hosts will take a look shortly.",
+  voiceReceived: "Got your voice message — we'll listen shortly.",
+  fileReceived: "Got the file. If it's urgent, please also send a short text.",
+  writeQuestion: "Please write your question in one message — we'll help.",
+  addCommentPrompt: "Add a comment and we'll pass it to your hosts.",
 
-  writeQuestion: "Please write your question in a single message.",
-  addCommentPrompt: "Please write a comment and we'll pass it to the administrator.",
-  drovaQuestion: "Do you need firewood brought over?",
-  linenQuestion: "What do you need?",
-  cleaningQuestion: "What kind of help do you need?",
-  brokenQuestion: "What exactly isn't working?",
-  banyaQuestion: "What can we help with?",
-  taxiQuestion:
-    "Please write where and when you need the car, and we'll pass it to the administrator.",
+  drovaQuestion: "Bring firewood for the fireplace or the grill?",
+  linenQuestion: "What should we bring?",
+  cleaningQuestion: "How can we help?",
+  gearQuestion: "What should we get ready?",
+  bbqQuestion: "What do you need for the grill?",
+  brokenQuestion: "What exactly isn't working? A photo helps if it's handy.",
+
   wifiInfo: (name, password) =>
-    `Wi-Fi details for your house:\n\n📶 Network: ${name}\n🔑 Password: ${password}`,
-  wifiMissing:
-    "We're confirming the Wi-Fi details. We've passed your question to the administrator.",
-  checkinoutInfo:
-    "🕒 Check-in: from 14:00\n🕚 Check-out: until 12:00\n\n" +
-    "Need an early check-in or late check-out? Write to us and we'll do our best.",
-  mapInfo: "📍 The site map has been sent. If you need help finding your way, write to us.",
-  addressInfo: (address) =>
-    `📍 How to find us:\n\n${address}\n\nIf anything is unclear on the way, message us and we'll help.`,
-  addressMissing:
-    "We're confirming the address and directions — we've passed your question to the administrator.",
+    `📶 Wi-Fi\n\nNetwork: ${name}\nPassword: ${password}\n\nIf it won't connect, write to us and we'll help.`,
+  wifiMissing: "One moment — we'll confirm the Wi-Fi details and send them right over. Passed to your hosts.",
+
+  activitiesInfo:
+    "🎣 Things to do\n\n" +
+    "• 🛶 SUP & boat — straight off the pier, included in your stay\n" +
+    "• 🎣 Fishing — lake up to 21 m deep, tackle on site\n" +
+    "• 🔥 Lakeside grill — firewood, grate and skewers ready\n" +
+    "• 💧 Finnish spring — fresh living water on the grounds\n" +
+    "• 🌲 Forest trails — mushrooms, berries and quiet right behind the house\n" +
+    "• 🚲 Bikes, pétanque, badminton, volleyball\n\n" +
+    "In winter — skating on the lake, skis, ice fishing and evenings by the fireplace.\n\n" +
+    "Want something prepared? Just write — we'll arrange it.",
+
+  checkoutInfo:
+    `🕒 Check-out\n\nCheck-out is by ${PROPERTY.checkOut}. Need a late check-out? ` +
+    `Write to us — we'll do our best if the house is free.\n\n` +
+    `Check-in, for reference, is from ${PROPERTY.checkIn}.`,
+
+  rulesInfo:
+    "📖 Rules & good to know\n\n" +
+    "• Up to 5 guests\n" +
+    "• Quiet hours from 23:00 — we protect the calm of the lake\n" +
+    `• Deposit ${PROPERTY.deposit} — refunded on check-out\n` +
+    "• Pets (up to 10 kg) — by arrangement with the hosts\n" +
+    "• Please take care of the house and grounds\n\n" +
+    "Included: linen & towels, Wi-Fi, parking, firewood, SUP, boat, bikes.\n\n" +
+    "Any question — just write, we're always here.",
+
+  addressInfo: (address, coords) =>
+    `📍 Address (for taxi & delivery)\n\n${address}\n🧭 Coordinates: ${coords}\n\n` +
+    `The last 2 km is a gravel road along the shore — a regular car handles it fine.`,
 
   dbError: (phone) =>
-    `A temporary technical issue may have occurred. If urgent, call the administrator: ${phone}.`,
-  genericError: (phone) =>
-    `Sorry, something went wrong. If urgent, call the administrator: ${phone}.`,
+    `Looks like a temporary technical hiccup. If it's urgent, call your host: ${phone}.`,
+  genericError: (phone) => `Sorry, something went wrong. If it's urgent, call your host: ${phone}.`,
 
   help: (phone) =>
-    "This is the Spring Village support chat 🌿\n\n" +
-    "• Choose a menu item or simply type your question as a normal message.\n" +
+    "Spring Village 🌲 — the help chat for your stay.\n\n" +
+    "• Pick a menu item or just write what you need.\n" +
     "• You can send a photo or a voice message.\n" +
-    `• Urgent? Call the administrator: ${phone}.\n\n` +
-    "Commands: /menu — menu, /call — administrator phone, /help — help.",
-  callInfo: (phone) =>
-    `📞 Administrator phone: ${phone}\n\nWe also receive your messages here in the chat.`,
+    `• Urgent? Call your host: ${phone}.\n\n` +
+    "Commands: /menu — menu, /call — host's phone.",
+  callInfo: (phone) => `📞 Host's phone: ${phone}\n\nWe're also always here in the chat.`,
   languageChoose: "Выберите язык / Choose language:",
-  languageSet: "Done, language switched to English 🇬🇧",
+  languageSet: "Done, switched to English 🇬🇧",
 
   btnBack: "⬅️ Back",
-  btnYesDrova: "✅ Yes, bring firewood",
-  btnAddComment: "✍️ Add a comment",
   btnConfirmHouse: "✅ Yes, correct",
-  btnChangeHouse: "🔁 Choose another house",
-  btnPastStay: "Past visit",
-  btnNewBooking: "New booking",
+  btnChangeHouse: "🔁 Another house",
+  btnAddComment: "✍️ Add a comment",
+  btnYesDrova: "✅ Yes, bring firewood",
   btnTowels: "🧺 Towels",
   btnBedLinen: "🛏 Bed linen",
   btnPaper: "🧻 Paper",
   btnOther: "✍️ Other",
   btnCleaning: "🧹 Cleaning",
   btnTakeTrash: "🗑 Take out trash",
-  btnUrgentCleaning: "🧽 Urgent cleaning",
+  btnBoat: "🚣 Boat",
+  btnSup: "🏄 SUP boards",
+  btnBikes: "🚲 Bikes",
+  btnGrill: "🔥 Grill / firewood",
+  btnSkewers: "🍢 Skewers / grate",
   btnLight: "💡 Light",
   btnWater: "🚿 Water",
-  btnHeating: "🔥 Heating",
-  btnDoorLock: "🚪 Door/lock",
+  btnHeating: "🔥 Heating / fireplace",
+  btnDoorLock: "🚪 Door / lock",
   btnWifi: "📶 Wi-Fi",
-  btnBanya: "🔥 Sauna",
-  btnGrill: "🍢 Grill",
-  btnTub: "🛁 Hot tub",
 };

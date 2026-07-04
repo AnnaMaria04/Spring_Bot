@@ -139,7 +139,7 @@ ALTER TABLE sessions ENABLE ROW LEVEL SECURITY;
 -- active so a single-house setup works out of the box (the bot auto-assigns
 -- the sole active house). Enable more later with /enablehouse <code>.
 INSERT INTO houses (code, name, status) VALUES
-  ('h1',  'Дом 1',  'active'),
+  ('h1',  'Коттедж WILD', 'active'),
   ('h2',  'Дом 2',  'inactive'),
   ('h3',  'Дом 3',  'inactive'),
   ('h4',  'Дом 4',  'inactive'),
