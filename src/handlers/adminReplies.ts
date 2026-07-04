@@ -1,7 +1,7 @@
 import type { Message } from "grammy/types";
 import type { MyContext } from "../context";
 import { adminText, formatGuestName } from "../messages/admin";
-import { isAuthorizedAdmin } from "../services/admins";
+import { isAuthorizedActor } from "../services/admins";
 import {
   findRequestByAdminMessage,
   assignAdmin,
@@ -34,8 +34,9 @@ export async function handleAdminMessage(ctx: MyContext): Promise<void> {
   // Only react to replies aimed at one of the bot's own messages.
   if (!replyTo || replyTo.from?.id !== ctx.me.id) return;
 
-  // Unauthorized people in the group are silently ignored (spec rule).
-  if (!(await isAuthorizedAdmin(ctx.from.id))) return;
+  // Anyone in the configured staff group (or an explicit admin) may reply;
+  // others are silently ignored.
+  if (!(await isAuthorizedActor(ctx.chat.id, ctx.from.id))) return;
 
   const req = await findRequestByAdminMessage(ctx.chat.id, replyTo.message_id);
   if (!req) {

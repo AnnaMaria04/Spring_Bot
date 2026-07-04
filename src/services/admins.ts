@@ -1,5 +1,6 @@
 import { query, queryOne } from "../db/client";
 import { ownerIdNum } from "../config";
+import { resolveAdminGroupId } from "./settings";
 import type { Admin } from "../types";
 
 /** True if the user is the configured owner or an active admin. */
@@ -10,6 +11,21 @@ export async function isAuthorizedAdmin(telegramUserId: number): Promise<boolean
     [telegramUserId]
   );
   return row !== null;
+}
+
+/**
+ * Whether an actor may reply to guests / use admin buttons. In addition to the
+ * owner and explicit admins, anyone acting *inside the configured private admin
+ * group* is trusted as staff — simple mode for small teams (just add people to
+ * the group, no /addadmin needed).
+ */
+export async function isAuthorizedActor(
+  chatId: number | undefined,
+  telegramUserId: number
+): Promise<boolean> {
+  if (await isAuthorizedAdmin(telegramUserId)) return true;
+  const groupId = await resolveAdminGroupId();
+  return groupId != null && chatId === groupId;
 }
 
 /** True if the user is the configured owner or an active admin with owner role. */

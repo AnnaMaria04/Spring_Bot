@@ -14,7 +14,7 @@ import {
   updateStatus,
   markUrgent,
 } from "../services/requests";
-import { isAuthorizedAdmin } from "../services/admins";
+import { isAuthorizedActor } from "../services/admins";
 import { resolveEmergencyPhone } from "../services/settings";
 import {
   refreshCard,
@@ -254,7 +254,7 @@ async function activeHouse(ctx: MyContext) {
 
 // ── Admin callbacks ─────────────────────────────────────────────
 async function handleAdminCallback(ctx: MyContext, data: string): Promise<void> {
-  if (!ctx.from || !(await isAuthorizedAdmin(ctx.from.id))) {
+  if (!ctx.from || !(await isAuthorizedActor(ctx.chat?.id, ctx.from.id))) {
     await ctx.answerCallbackQuery({ text: adminText.notAuthorized, show_alert: true });
     return;
   }
