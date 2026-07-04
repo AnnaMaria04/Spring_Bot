@@ -4,7 +4,7 @@ import { t } from "../messages";
 import { formatGuestName } from "../messages/admin";
 import { upsertGuest } from "../services/guests";
 import { getActiveStay } from "../services/stays";
-import { getHouseById, listActiveHouses } from "../services/houses";
+import { getHouseById } from "../services/houses";
 import {
   createRequest,
   getLatestOpenRequest,
@@ -16,7 +16,7 @@ import {
   postRequestCard,
 } from "../services/notifications";
 import { resolveEmergencyPhone } from "../services/settings";
-import { buildHousePicker } from "../keyboards/guestMenu";
+import { promptForHouse } from "./start";
 import type { GuestMessages } from "../messages";
 import type { House, RequestStatus, ServiceRequest } from "../types";
 
@@ -64,8 +64,7 @@ export async function intake(ctx: MyContext, opts: IntakeOptions): Promise<void>
 
   const stay = await getActiveStay(guest.id);
   if (!stay) {
-    const houses = await listActiveHouses();
-    await ctx.reply(m.scanOrChooseHouse, { reply_markup: buildHousePicker(houses) });
+    await promptForHouse(ctx, lang);
     return;
   }
 
@@ -142,8 +141,7 @@ export async function createCategorizedRequest(
 
   const stay = await getActiveStay(guest.id);
   if (!stay) {
-    const houses = await listActiveHouses();
-    await ctx.reply(m.scanOrChooseHouse, { reply_markup: buildHousePicker(houses) });
+    await promptForHouse(ctx, lang);
     return { ok: false, lang, m };
   }
   const house = await getHouseById(stay.house_id);

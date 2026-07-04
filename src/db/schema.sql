@@ -17,6 +17,9 @@ CREATE TABLE IF NOT EXISTS houses (
   wifi_password TEXT,
   notes         TEXT,
   topic_id      BIGINT,                          -- optional forum topic id in the admin group
+  checkin_info  TEXT,                            -- per-house check-in/out details (auto-answer)
+  address       TEXT,                            -- per-house address / how to find us (auto-answer)
+  map_url       TEXT,                            -- optional link to a map
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -132,16 +135,18 @@ ALTER TABLE admins   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE sessions ENABLE ROW LEVEL SECURITY;
 
--- Seed: the 10 Spring Village houses (h1..h10 / Дом 1..Дом 10) ──
-INSERT INTO houses (code, name) VALUES
-  ('h1',  'Дом 1'),
-  ('h2',  'Дом 2'),
-  ('h3',  'Дом 3'),
-  ('h4',  'Дом 4'),
-  ('h5',  'Дом 5'),
-  ('h6',  'Дом 6'),
-  ('h7',  'Дом 7'),
-  ('h8',  'Дом 8'),
-  ('h9',  'Дом 9'),
-  ('h10', 'Дом 10')
+-- Seed: 10 house records with QR codes ready (h1..h10). Only Дом 1 starts
+-- active so a single-house setup works out of the box (the bot auto-assigns
+-- the sole active house). Enable more later with /enablehouse <code>.
+INSERT INTO houses (code, name, status) VALUES
+  ('h1',  'Дом 1',  'active'),
+  ('h2',  'Дом 2',  'inactive'),
+  ('h3',  'Дом 3',  'inactive'),
+  ('h4',  'Дом 4',  'inactive'),
+  ('h5',  'Дом 5',  'inactive'),
+  ('h6',  'Дом 6',  'inactive'),
+  ('h7',  'Дом 7',  'inactive'),
+  ('h8',  'Дом 8',  'inactive'),
+  ('h9',  'Дом 9',  'inactive'),
+  ('h10', 'Дом 10', 'inactive')
 ON CONFLICT (code) DO NOTHING;

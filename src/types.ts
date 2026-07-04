@@ -9,6 +9,9 @@ export interface House {
   wifi_password: string | null;
   notes: string | null;
   topic_id: number | null;
+  checkin_info: string | null;
+  address: string | null;
+  map_url: string | null;
   created_at: string;
 }
 

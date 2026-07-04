@@ -34,6 +34,12 @@ export function createBot(): Bot<MyContext> {
   bot.command("setgroup", cmd.handleSetGroup);
   bot.command("addadmin", cmd.handleAddAdmin);
   bot.command("removeadmin", cmd.handleRemoveAdmin);
+  bot.command("houses", cmd.handleHouses);
+  bot.command("enablehouse", cmd.handleEnableHouse);
+  bot.command("disablehouse", cmd.handleDisableHouse);
+  bot.command("setwifi", cmd.handleSetWifi);
+  bot.command("setcheckin", cmd.handleSetCheckin);
+  bot.command("setaddress", cmd.handleSetAddress);
 
   // Inline button presses (guest navigation + admin actions).
   bot.on("callback_query:data", handleCallback);

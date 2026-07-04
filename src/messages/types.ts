@@ -5,6 +5,8 @@ export interface GuestMessages {
   menuPrompt: string;
   chooseHouse: string;
   scanOrChooseHouse: string;
+  askHouseNumber: string;
+  houseNotFound: string;
   houseConfirm(houseName: string): string;
   houseSwitched(houseName: string): string;
   houseKept(houseName: string): string;
@@ -36,6 +38,8 @@ export interface GuestMessages {
   wifiMissing: string;
   checkinoutInfo: string;
   mapInfo: string;
+  addressInfo(address: string): string;
+  addressMissing: string;
 
   // Errors & fallback
   dbError(phone: string): string;

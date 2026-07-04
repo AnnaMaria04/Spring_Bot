@@ -10,11 +10,7 @@ import {
 } from "../categories";
 import { upsertGuest, getGuestById, setGuestLanguage } from "../services/guests";
 import { getActiveStay, startStay } from "../services/stays";
-import {
-  getHouseByCode,
-  getHouseById,
-  listActiveHouses,
-} from "../services/houses";
+import { getHouseByCode, getHouseById } from "../services/houses";
 import {
   getRequestById,
   assignAdmin,
@@ -28,13 +24,9 @@ import {
   postUrgentAlert,
   sendInfoCard,
 } from "../services/notifications";
-import { sendWelcome } from "./start";
+import { promptForHouse } from "./start";
 import { createCategorizedRequest } from "./intake";
-import {
-  buildMainMenu,
-  buildHousePicker,
-  buildCategoryKeyboard,
-} from "../keyboards/guestMenu";
+import { buildMainMenu, buildCategoryKeyboard } from "../keyboards/guestMenu";
 
 const ADMIN_ACTIONS = new Set(["take", "reply", "done", "urgent", "reopen", "info"]);
 
@@ -95,9 +87,8 @@ async function handleGuestCallback(ctx: MyContext, data: string): Promise<void> 
   }
 
   if (data === "house_change") {
-    const houses = await listActiveHouses();
     await ctx.answerCallbackQuery();
-    await editOrReply(ctx, m.chooseHouse, { reply_markup: buildHousePicker(houses) });
+    await promptForHouse(ctx, lang);
     return;
   }
 
@@ -210,16 +201,31 @@ async function handleCategory(
   }
 
   if (key === "checkinout") {
-    await editOrReply(ctx, m.checkinoutInfo, {
+    const house = await activeHouse(ctx);
+    const text = house?.checkin_info?.trim() || m.checkinoutInfo;
+    await editOrReply(ctx, text, {
       reply_markup: buildCategoryKeyboard("checkinout", lang) ?? undefined,
     });
     return;
   }
 
   if (key === "map") {
-    await editOrReply(ctx, m.mapInfo, {
-      reply_markup: buildCategoryKeyboard("map", lang) ?? undefined,
-    });
+    const house = await activeHouse(ctx);
+    const parts: string[] = [];
+    if (house?.address?.trim()) parts.push(m.addressInfo(house.address.trim()));
+    if (house?.map_url?.trim()) parts.push(house.map_url.trim());
+    if (parts.length > 0) {
+      await editOrReply(ctx, parts.join("\n\n"), {
+        reply_markup: buildCategoryKeyboard("map", lang) ?? undefined,
+      });
+    } else {
+      // No address on file → forward the question to admins.
+      await createCategorizedRequest(ctx, {
+        category: "map",
+        summary: "Гость спрашивает адрес / как добраться.",
+      });
+      await editOrReply(ctx, m.addressMissing);
+    }
     return;
   }
 
