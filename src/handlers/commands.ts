@@ -282,9 +282,13 @@ export async function handleSetAddress(ctx: MyContext): Promise<void> {
 
 // ── Occupancy (Bnovo) ───────────────────────────────────────────
 
-/** Show who is currently staying, per Bnovo. Staff-only. */
+/** Show who is currently staying, per Bnovo. Staff-only (owner, group members,
+ *  or anyone during first-time setup before an owner is configured). */
 export async function handleOccupancy(ctx: MyContext): Promise<void> {
-  if (!ctx.from || !(await isAuthorizedActor(ctx.chat?.id, ctx.from.id))) {
+  const allowed =
+    (await canManage(ctx)) ||
+    (ctx.from ? await isAuthorizedActor(ctx.chat?.id, ctx.from.id) : false);
+  if (!allowed) {
     await ctx.reply(adminText.notAuthorized);
     return;
   }
