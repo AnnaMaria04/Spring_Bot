@@ -2,7 +2,6 @@ import { InlineKeyboard } from "grammy";
 import type { Language } from "../config";
 import { CATEGORIES, categoryButtonLabel, type CategoryKey } from "../categories";
 import { t } from "../messages";
-import type { House } from "../types";
 
 /** Main guest menu shown after welcome / on /menu. */
 export function buildMainMenu(lang: Language): InlineKeyboard {
@@ -40,17 +39,6 @@ export function buildHouseConfirmKeyboard(
     .text(m.btnConfirmHouse, `house_confirm:${code}`)
     .row()
     .text(m.btnChangeHouse, "house_change");
-}
-
-/** Picker listing all active houses. */
-export function buildHousePicker(houses: House[]): InlineKeyboard {
-  const kb = new InlineKeyboard();
-  houses.forEach((h, i) => {
-    kb.text(h.name, `house_pick:${h.code}`);
-    if (i % 2 === 1) kb.row();
-  });
-  kb.row();
-  return kb;
 }
 
 function backRow(kb: InlineKeyboard, lang: Language): InlineKeyboard {

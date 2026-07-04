@@ -7,6 +7,8 @@ import type { Context, SessionFlavor } from "grammy";
  */
 export interface SessionData {
   pending?: { kind: "new_request_text"; category: string } | null;
+  /** True while we're waiting for the guest to type their house number. */
+  awaitingHouseNumber?: boolean;
 }
 
 export type MyContext = Context & SessionFlavor<SessionData>;

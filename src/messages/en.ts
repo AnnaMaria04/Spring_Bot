@@ -11,9 +11,12 @@ export const en: GuestMessages = {
 
   menuPrompt: "How can we help?",
 
-  chooseHouse: "Please choose your house so we know where to route your request.",
+  chooseHouse: "Please tell us your house so we know where to route your request.",
   scanOrChooseHouse:
-    "To help you faster, choose your house below or scan the QR code in the house.",
+    "To help you faster, scan the QR code in the house or type your house number.",
+  askHouseNumber: "Please type your house number as a digit — for example, 3.",
+  houseNotFound:
+    "We couldn't find a house with that number. Please check and type the number again.",
   houseConfirm: (houseName) => `Your house: ${houseName}. Is that correct?`,
   houseSwitched: (houseName) => `Done, your house is now: ${houseName}.`,
   houseKept: (houseName) => `Okay, keeping your house: ${houseName}.`,
@@ -52,6 +55,10 @@ export const en: GuestMessages = {
     "🕒 Check-in: from 14:00\n🕚 Check-out: until 12:00\n\n" +
     "Need an early check-in or late check-out? Write to us and we'll do our best.",
   mapInfo: "📍 The site map has been sent. If you need help finding your way, write to us.",
+  addressInfo: (address) =>
+    `📍 How to find us:\n\n${address}\n\nIf anything is unclear on the way, message us and we'll help.`,
+  addressMissing:
+    "We're confirming the address and directions — we've passed your question to the administrator.",
 
   dbError: (phone) =>
     `A temporary technical issue may have occurred. If urgent, call the administrator: ${phone}.`,

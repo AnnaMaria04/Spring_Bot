@@ -6,6 +6,7 @@ import { upsertGuest } from "../services/guests";
 import { resolveEmergencyPhone } from "../services/settings";
 import { buildMainMenu } from "../keyboards/guestMenu";
 import { intake } from "./intake";
+import { selectHouseByNumber } from "./start";
 
 function detectMediaType(msg: Message): string | null {
   if (msg.photo) return "photo";
@@ -38,6 +39,18 @@ export async function handleGuestMessage(ctx: MyContext): Promise<void> {
   const msg = ctx.message;
   if (!msg) return;
 
+  const lang = await guestLang(ctx);
+
+  // While waiting for a house number, a typed number selects the house.
+  if (ctx.session.awaitingHouseNumber) {
+    if (msg.text) {
+      await selectHouseByNumber(ctx, lang, msg.text);
+    } else {
+      await ctx.reply(t(lang).askHouseNumber);
+    }
+    return;
+  }
+
   const pending = ctx.session.pending;
   const category = pending?.category ?? null;
   const forceNew = !!pending;
@@ -64,7 +77,6 @@ export async function handleGuestMessage(ctx: MyContext): Promise<void> {
     }
 
     // Content we can't meaningfully forward (location, contact, poll, ...).
-    const lang = await guestLang(ctx);
     await ctx.reply(t(lang).unclear, { reply_markup: buildMainMenu(lang) });
   } catch (err) {
     console.error("[guestMessages] error:", err);
