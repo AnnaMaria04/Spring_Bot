@@ -40,6 +40,7 @@ export function createBot(): Bot<MyContext> {
   bot.command("setwifi", cmd.handleSetWifi);
   bot.command("setcheckin", cmd.handleSetCheckin);
   bot.command("setaddress", cmd.handleSetAddress);
+  bot.command("occupancy", cmd.handleOccupancy);
 
   // Inline button presses (guest navigation + admin actions).
   bot.on("callback_query:data", handleCallback);
