@@ -1,23 +1,24 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import type { Bot } from "grammy";
-import { createBot } from "../src/bot";
-import { config } from "../src/config";
 import type { MyContext } from "../src/context";
 
 /**
- * Vercel serverless webhook. The bot instance is cached across warm
- * invocations. Telegram's secret token header is verified before processing.
+ * Vercel serverless webhook. Config/bot are imported lazily so a GET health
+ * check still works when env vars are missing (instead of a hard 500). The
+ * bot instance is cached across warm invocations.
  */
-let bot: Bot<MyContext> | null = null;
-let initialized = false;
+let botPromise: Promise<Bot<MyContext>> | null = null;
 
 async function getBot(): Promise<Bot<MyContext>> {
-  if (!bot) bot = createBot();
-  if (!initialized) {
-    await bot.init();
-    initialized = true;
+  if (!botPromise) {
+    botPromise = (async () => {
+      const { createBot } = await import("../src/bot");
+      const bot = createBot();
+      await bot.init();
+      return bot;
+    })();
   }
-  return bot;
+  return botPromise;
 }
 
 export default async function handler(
@@ -25,21 +26,21 @@ export default async function handler(
   res: VercelResponse
 ): Promise<void> {
   if (req.method !== "POST") {
-    res.status(200).send("Spring Village bot webhook is running.");
+    res
+      .status(200)
+      .send("Spring Village bot webhook is running. Open /api/setup to configure and check status.");
     return;
   }
 
-  if (config.webhookSecret) {
-    const token = req.headers["x-telegram-bot-api-secret-token"];
-    if (token !== config.webhookSecret) {
-      res.status(401).send("unauthorized");
-      return;
-    }
+  const secret = process.env.WEBHOOK_SECRET?.trim();
+  if (secret && req.headers["x-telegram-bot-api-secret-token"] !== secret) {
+    res.status(401).send("unauthorized");
+    return;
   }
 
   try {
-    const b = await getBot();
-    await b.handleUpdate(req.body);
+    const bot = await getBot();
+    await bot.handleUpdate(req.body);
     res.status(200).send("ok");
   } catch (err) {
     // Acknowledge so Telegram does not hammer retries; the error is logged.
