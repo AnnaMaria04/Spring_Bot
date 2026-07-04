@@ -14,7 +14,8 @@ import {
   setHouseName,
 } from "../services/houses";
 import { resolveEmergencyPhone, setAdminGroupId } from "../services/settings";
-import { isOwner, addAdmin, deactivateAdmin } from "../services/admins";
+import { isOwner, addAdmin, deactivateAdmin, isAuthorizedActor } from "../services/admins";
+import { getOccupancy, moscowToday, bnovoConfigured } from "../services/bnovo";
 import { buildMainMenu } from "../keyboards/guestMenu";
 import { buildLanguageKeyboard } from "../keyboards/languageButtons";
 import { promptForHouse } from "./start";
@@ -277,4 +278,32 @@ export async function handleSetAddress(ctx: MyContext): Promise<void> {
     return;
   }
   await ctx.reply(`✅ Адрес для «${house.name}» сохранён.`);
+}
+
+// ── Occupancy (Bnovo) ───────────────────────────────────────────
+
+/** Show who is currently staying, per Bnovo. Staff-only. */
+export async function handleOccupancy(ctx: MyContext): Promise<void> {
+  if (!ctx.from || !(await isAuthorizedActor(ctx.chat?.id, ctx.from.id))) {
+    await ctx.reply(adminText.notAuthorized);
+    return;
+  }
+  if (!bnovoConfigured()) {
+    await ctx.reply(
+      "Bnovo не подключён. Добавьте переменную BNOVO_API_KEY в Vercel → Settings → Environment Variables и сделайте Redeploy."
+    );
+    return;
+  }
+  const r = await getOccupancy(moscowToday());
+  if (!r.ok) {
+    await ctx.reply(`⚠️ Не удалось получить данные из Bnovo:\n\n${r.error}`);
+    return;
+  }
+  if (!r.occupant) {
+    await ctx.reply("🏡 Сейчас в домике никто не проживает (по данным Bnovo).");
+    return;
+  }
+  await ctx.reply(
+    `🗓 Сейчас проживает:\n\n👤 ${r.occupant.name}\n📥 Заезд: ${r.occupant.arrival}\n📤 Выезд: ${r.occupant.departure}`
+  );
 }
