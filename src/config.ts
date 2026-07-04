@@ -41,8 +41,8 @@ export const config = {
   ownerTelegramId: optional("OWNER_TELEGRAM_ID"),
 
   defaultLanguage: (optional("DEFAULT_LANGUAGE", "ru") as Language) || "ru",
-  emergencyPhone: optional("EMERGENCY_PHONE", "+7 XXX XXX XX XX"),
-  publicBotUsername: optional("PUBLIC_BOT_USERNAME", "SpringVillageSupportBot"),
+  emergencyPhone: optional("EMERGENCY_PHONE", "+7 (911) 110-16-52"),
+  publicBotUsername: optional("PUBLIC_BOT_USERNAME", "SpringVillage_Chatbot"),
 
   port: optionalNumber("PORT", 8080),
   followupWindowMinutes: optionalNumber("FOLLOWUP_WINDOW_MINUTES", 10),

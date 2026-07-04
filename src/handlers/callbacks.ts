@@ -3,11 +3,8 @@ import type { MyContext } from "../context";
 import { config, type Language } from "../config";
 import { t } from "../messages";
 import { adminText, formatGuestName } from "../messages/admin";
-import {
-  CATEGORIES,
-  detailSummary,
-  type CategoryKey,
-} from "../categories";
+import { detailSummary, type CategoryKey } from "../categories";
+import { PROPERTY } from "../content/property";
 import { upsertGuest, getGuestById, setGuestLanguage } from "../services/guests";
 import { getActiveStay, startStay } from "../services/stays";
 import { getHouseByCode, getHouseById } from "../services/houses";
@@ -142,14 +139,6 @@ async function handleGuestCallback(ctx: MyContext, data: string): Promise<void> 
     return;
   }
 
-  // Returning-after-checkout branch
-  if (data.startsWith("past:")) {
-    ctx.session.pending = { kind: "new_request_text", category: "other" };
-    await ctx.answerCallbackQuery();
-    await editOrReply(ctx, m.writeQuestion);
-    return;
-  }
-
   await ctx.answerCallbackQuery();
 }
 
@@ -182,15 +171,14 @@ async function handleCategory(
     return;
   }
 
-  // Info-only: Wi-Fi
+  // Info-only: Wi-Fi (from stored house data, else forward to the hosts).
   if (key === "wifi") {
     const house = await activeHouse(ctx);
     if (house?.wifi_name && house.wifi_password) {
       await editOrReply(ctx, m.wifiInfo(house.wifi_name, house.wifi_password), {
-        reply_markup: buildCategoryKeyboard("wifi", lang) ?? undefined,
+        reply_markup: backKb(lang),
       });
     } else {
-      // No Wi-Fi on file → forward the question to admins.
       await createCategorizedRequest(ctx, {
         category: "wifi",
         summary: "Гость спрашивает данные Wi-Fi.",
@@ -200,48 +188,38 @@ async function handleCategory(
     return;
   }
 
-  if (key === "checkinout") {
+  // Info-only: instant auto-answers from property data.
+  if (key === "activities") {
+    await editOrReply(ctx, m.activitiesInfo, { reply_markup: backKb(lang) });
+    return;
+  }
+  if (key === "checkout") {
     const house = await activeHouse(ctx);
-    const text = house?.checkin_info?.trim() || m.checkinoutInfo;
-    await editOrReply(ctx, text, {
-      reply_markup: buildCategoryKeyboard("checkinout", lang) ?? undefined,
+    const text = house?.checkin_info?.trim() || m.checkoutInfo;
+    await editOrReply(ctx, text, { reply_markup: backKb(lang) });
+    return;
+  }
+  if (key === "rules") {
+    await editOrReply(ctx, m.rulesInfo, { reply_markup: backKb(lang) });
+    return;
+  }
+  if (key === "address") {
+    const house = await activeHouse(ctx);
+    const address = house?.address?.trim() || PROPERTY.addressFull;
+    await editOrReply(ctx, m.addressInfo(address, PROPERTY.coords), {
+      reply_markup: backKb(lang),
     });
     return;
   }
 
-  if (key === "map") {
-    const house = await activeHouse(ctx);
-    const parts: string[] = [];
-    if (house?.address?.trim()) parts.push(m.addressInfo(house.address.trim()));
-    if (house?.map_url?.trim()) parts.push(house.map_url.trim());
-    if (parts.length > 0) {
-      await editOrReply(ctx, parts.join("\n\n"), {
-        reply_markup: buildCategoryKeyboard("map", lang) ?? undefined,
-      });
-    } else {
-      // No address on file → forward the question to admins.
-      await createCategorizedRequest(ctx, {
-        category: "map",
-        summary: "Гость спрашивает адрес / как добраться.",
-      });
-      await editOrReply(ctx, m.addressMissing);
-    }
-    return;
-  }
-
-  // Free-text categories
+  // Free-text
   if (key === "other") {
     ctx.session.pending = { kind: "new_request_text", category: "other" };
     await editOrReply(ctx, m.writeQuestion, { reply_markup: backKb(lang) });
     return;
   }
-  if (key === "taxi") {
-    ctx.session.pending = { kind: "new_request_text", category: "taxi" };
-    await editOrReply(ctx, m.taxiQuestion, { reply_markup: backKb(lang) });
-    return;
-  }
 
-  // Categories with a sub-menu (drova, linen, cleaning, broken, banya)
+  // Service categories with a sub-menu (drova, linen, cleaning, gear, bbq, broken)
   const question = categoryQuestion(key, m);
   const kb = buildCategoryKeyboard(key, lang);
   await editOrReply(ctx, question, { reply_markup: kb ?? buildMainMenu(lang) });
@@ -255,12 +233,14 @@ function categoryQuestion(key: CategoryKey, m: ReturnType<typeof t>): string {
       return m.linenQuestion;
     case "cleaning":
       return m.cleaningQuestion;
+    case "gear":
+      return m.gearQuestion;
+    case "bbq":
+      return m.bbqQuestion;
     case "broken":
       return m.brokenQuestion;
-    case "banya":
-      return m.banyaQuestion;
     default:
-      return CATEGORIES[key]?.ru ?? m.menuPrompt;
+      return m.menuPrompt;
   }
 }
 

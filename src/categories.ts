@@ -1,20 +1,24 @@
 import type { Language } from "./config";
 
 /**
- * Central definition of guest request categories. Keeping labels here means
- * the guest menu, the admin request card, and message history all show the
- * same human-readable text without duplication.
+ * Guest request categories for an in-stay concierge (guests already at the
+ * cottage). Labels live here so the menu, admin card, and history stay in sync.
  */
 export type CategoryKey =
+  // Services (open a request)
   | "drova"
   | "linen"
   | "cleaning"
+  | "gear"
+  | "bbq"
   | "broken"
+  // Info (instant auto-answer)
   | "wifi"
-  | "banya"
-  | "taxi"
-  | "checkinout"
-  | "map"
+  | "activities"
+  | "checkout"
+  | "rules"
+  | "address"
+  // Contact
   | "other"
   | "call";
 
@@ -30,14 +34,16 @@ export const CATEGORIES: Record<CategoryKey, CategoryDef> = {
   drova: { emoji: "🪵", ru: "Дрова", en: "Firewood" },
   linen: { emoji: "🧺", ru: "Полотенца / бельё", en: "Towels / linen" },
   cleaning: { emoji: "🧹", ru: "Уборка", en: "Cleaning" },
-  broken: { emoji: "🔧", ru: "Что-то не работает", en: "Something is broken" },
+  gear: { emoji: "🛶", ru: "Лодка, SUP, велосипеды", en: "Boat, SUP, bikes" },
+  bbq: { emoji: "🔥", ru: "Мангал / гриль", en: "Grill / BBQ" },
+  broken: { emoji: "🔧", ru: "Что-то не работает", en: "Something's not working" },
   wifi: { emoji: "📶", ru: "Wi-Fi", en: "Wi-Fi", infoOnly: true },
-  banya: { emoji: "🔥", ru: "Баня / мангал / купель", en: "Sauna / grill / tub" },
-  taxi: { emoji: "🚕", ru: "Такси / трансфер", en: "Taxi / transfer" },
-  checkinout: { emoji: "🕒", ru: "Заезд / выезд", en: "Check-in / out", infoOnly: true },
-  map: { emoji: "📍", ru: "Карта территории", en: "Site map", infoOnly: true },
+  activities: { emoji: "🎣", ru: "Чем заняться", en: "Things to do", infoOnly: true },
+  checkout: { emoji: "🕒", ru: "Выезд", en: "Check-out", infoOnly: true },
+  rules: { emoji: "📖", ru: "Правила и важное", en: "Rules & info", infoOnly: true },
+  address: { emoji: "📍", ru: "Адрес", en: "Address", infoOnly: true },
   other: { emoji: "❓", ru: "Другой вопрос", en: "Other question" },
-  call: { emoji: "📞", ru: "Позвонить администратору", en: "Call the administrator" },
+  call: { emoji: "📞", ru: "Позвонить хозяину", en: "Call the host" },
 };
 
 /** Human-readable label for a category in the given language (no emoji). */
@@ -60,21 +66,22 @@ export function categoryButtonLabel(key: CategoryKey, lang: Language): string {
  */
 export function detailSummary(category: string, detail: string): string {
   const map: Record<string, string> = {
-    "drova:default": "Гость попросил принести дрова.",
+    "drova:default": "Гость просит дрова (камин / мангал).",
     "linen:towels": "Нужны полотенца.",
     "linen:bed": "Нужно постельное бельё.",
     "linen:paper": "Нужна туалетная бумага.",
     "cleaning:clean": "Нужна уборка.",
     "cleaning:trash": "Просьба забрать мусор.",
-    "cleaning:urgent": "Нужна срочная уборка.",
+    "gear:boat": "Гость просит подготовить лодку.",
+    "gear:sup": "Гость просит SUP-доски.",
+    "gear:bike": "Гость просит велосипеды.",
+    "bbq:coals": "Гость просит подготовить мангал / дрова.",
+    "bbq:tools": "Гость просит шампуры / решётку.",
     "broken:light": "Не работает свет.",
     "broken:water": "Проблема с водой.",
-    "broken:heating": "Не работает отопление.",
+    "broken:heat": "Не работает отопление / камин.",
     "broken:door": "Проблема с дверью или замком.",
     "broken:wifi": "Не работает Wi-Fi.",
-    "banya:banya": "Вопрос по бане.",
-    "banya:grill": "Вопрос по мангалу.",
-    "banya:tub": "Вопрос по купели.",
   };
   return map[`${category}:${detail}`] ?? categoryLabel(category, "ru");
 }
