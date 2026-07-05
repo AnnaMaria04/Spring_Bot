@@ -77,7 +77,7 @@ export function updateStatus(
   );
 }
 
-/** Assign an admin and move a brand-new request into progress. */
+/** Assign an admin, stamp the take time, and move a new request into progress. */
 export function assignAdmin(
   requestId: number,
   adminTelegramId: number,
@@ -87,11 +87,42 @@ export function assignAdmin(
     `UPDATE requests
        SET assigned_admin_id = $2,
            assigned_admin_name = $3,
+           taken_at = COALESCE(taken_at, now()),
            status = CASE WHEN status = 'new' THEN 'in_progress' ELSE status END,
            updated_at = now()
      WHERE id = $1
      RETURNING *`,
     [requestId, adminTelegramId, adminName]
+  );
+}
+
+/** Mark a request complete, recording who and when. */
+export function markDone(
+  requestId: number,
+  doneByName: string
+): Promise<ServiceRequest | null> {
+  return queryOne<ServiceRequest>(
+    `UPDATE requests
+       SET status = 'done', done_at = now(), done_by_name = $2, updated_at = now()
+     WHERE id = $1
+     RETURNING *`,
+    [requestId, doneByName]
+  );
+}
+
+/** Stamp the first-reply time once (used to compute response time). */
+export async function recordFirstReply(requestId: number): Promise<void> {
+  await query(
+    "UPDATE requests SET first_reply_at = COALESCE(first_reply_at, now()), updated_at = now() WHERE id = $1",
+    [requestId]
+  );
+}
+
+/** All still-open requests, oldest first (for the /open overview). */
+export function listOpenRequests(): Promise<ServiceRequest[]> {
+  return query<ServiceRequest>(
+    "SELECT * FROM requests WHERE status = ANY($1) ORDER BY created_at ASC",
+    [OPEN_STATUSES]
   );
 }
 

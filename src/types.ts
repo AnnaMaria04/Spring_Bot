@@ -55,6 +55,10 @@ export interface ServiceRequest {
   assigned_admin_name: string | null;
   admin_chat_id: number | null;
   admin_message_id: number | null;
+  taken_at: string | null;
+  first_reply_at: string | null;
+  done_at: string | null;
+  done_by_name: string | null;
   created_at: string;
   updated_at: string;
 }

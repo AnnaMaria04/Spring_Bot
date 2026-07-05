@@ -12,7 +12,7 @@ import {
   getRequestById,
   assignAdmin,
   updateStatus,
-  markUrgent,
+  markDone,
 } from "../services/requests";
 import { isAuthorizedActor } from "../services/admins";
 import { resolveEmergencyPhone } from "../services/settings";
@@ -23,9 +23,14 @@ import {
 } from "../services/notifications";
 import { promptForHouse } from "./start";
 import { createCategorizedRequest } from "./intake";
-import { buildMainMenu, buildCategoryKeyboard } from "../keyboards/guestMenu";
+import {
+  buildMainMenu,
+  buildServicesMenu,
+  buildInfoMenu,
+  buildCategoryKeyboard,
+} from "../keyboards/guestMenu";
 
-const ADMIN_ACTIONS = new Set(["take", "reply", "done", "urgent", "reopen", "info"]);
+const ADMIN_ACTIONS = new Set(["take", "reply", "done", "reopen", "info"]);
 
 /** Safely edit the message the callback came from, falling back to a reply. */
 async function editOrReply(
@@ -49,6 +54,16 @@ async function guestLang(ctx: MyContext): Promise<Language> {
 
 function backKb(lang: Language): InlineKeyboard {
   return new InlineKeyboard().text(t(lang).btnBack, "menu_back");
+}
+
+/**
+ * Prompt the guest for free text using ForceReply — this auto-opens the
+ * keyboard with a placeholder hint, so it's obvious they should just type.
+ */
+async function askText(ctx: MyContext, text: string, placeholder: string): Promise<void> {
+  await ctx.reply(text, {
+    reply_markup: { force_reply: true, input_field_placeholder: placeholder.slice(0, 64) },
+  });
 }
 
 export async function handleCallback(ctx: MyContext): Promise<void> {
@@ -96,6 +111,20 @@ async function handleGuestCallback(ctx: MyContext, data: string): Promise<void> 
     return;
   }
 
+  // Menu groups
+  if (data === "group:services") {
+    await ctx.answerCallbackQuery();
+    ctx.session.pending = null;
+    await editOrReply(ctx, m.servicesTitle, { reply_markup: buildServicesMenu(lang) });
+    return;
+  }
+  if (data === "group:info") {
+    await ctx.answerCallbackQuery();
+    ctx.session.pending = null;
+    await editOrReply(ctx, m.infoTitle, { reply_markup: buildInfoMenu(lang) });
+    return;
+  }
+
   if (data.startsWith("lang:")) {
     const newLang = data.split(":")[1] === "en" ? "en" : "ru";
     if (ctx.from) await setGuestLanguage(ctx.from.id, newLang);
@@ -116,7 +145,7 @@ async function handleGuestCallback(ctx: MyContext, data: string): Promise<void> 
     const category = data.split(":")[1];
     ctx.session.pending = { kind: "new_request_text", category };
     await ctx.answerCallbackQuery();
-    await editOrReply(ctx, m.addCommentPrompt, { reply_markup: backKb(lang) });
+    await askText(ctx, m.addCommentPrompt, m.inputPlaceholder);
     return;
   }
 
@@ -212,10 +241,10 @@ async function handleCategory(
     return;
   }
 
-  // Free-text
+  // Free-text — ForceReply makes it obvious the guest should just type.
   if (key === "other") {
     ctx.session.pending = { kind: "new_request_text", category: "other" };
-    await editOrReply(ctx, m.writeQuestion, { reply_markup: backKb(lang) });
+    await askText(ctx, m.writeQuestion, m.inputPlaceholder);
     return;
   }
 
@@ -288,28 +317,10 @@ async function handleAdminCallback(ctx: MyContext, data: string): Promise<void> 
       return;
     }
     case "done": {
-      await updateStatus(requestId, "done");
+      await markDone(requestId, adminName);
       await refreshCard(ctx.api, requestId);
       await ctx.answerCallbackQuery({ text: adminText.markedDone(requestId) });
       await notifyGuest(ctx, req.guest_id, (m) => m.done);
-      return;
-    }
-    case "urgent": {
-      const updated = await markUrgent(requestId);
-      await refreshCard(ctx.api, requestId);
-      const house = await getHouseById(req.house_id);
-      const guest = await getGuestById(req.guest_id);
-      if (updated && house) {
-        await postUrgentAlert(
-          ctx.api,
-          updated,
-          house,
-          formatGuestName(guest?.first_name, guest?.username)
-        );
-      }
-      await ctx.answerCallbackQuery({ text: adminText.markedUrgent(requestId) });
-      const phone = await resolveEmergencyPhone();
-      await notifyGuest(ctx, req.guest_id, (m) => m.emergency(phone));
       return;
     }
     case "reopen": {

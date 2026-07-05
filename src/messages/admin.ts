@@ -13,7 +13,22 @@ export interface AdminCardData {
   message: string;
   status: string;
   assignedName?: string | null;
+  takenAt?: string | null; // HH:MM the admin took it
+  responseDuration?: string | null; // e.g. "4 мин" — request → first reply
+  doneBy?: string | null;
+  doneAt?: string | null; // HH:MM completed
+  resolutionDuration?: string | null; // request → done
   priority?: string | null;
+}
+
+/** Human-readable duration from milliseconds, e.g. "4 мин", "1 ч 5 мин". */
+export function formatDuration(ms: number): string {
+  const min = Math.round(Math.max(0, ms) / 60000);
+  if (min < 1) return "меньше минуты";
+  if (min < 60) return `${min} мин`;
+  const h = Math.floor(min / 60);
+  const mm = min % 60;
+  return mm ? `${h} ч ${mm} мин` : `${h} ч`;
 }
 
 const STATUS_TITLE: Record<string, string> = {
@@ -82,7 +97,14 @@ export function renderCard(d: AdminCardData): string {
     "💬 Сообщение:",
     d.message?.trim() ? d.message.trim() : "—",
     "",
-    d.assignedName ? `👷 Взял: ${d.assignedName}` : null,
+    d.assignedName
+      ? `👷 Взял: ${d.assignedName}${d.takenAt ? ` · ${d.takenAt}` : ""}`
+      : null,
+    d.responseDuration ? `⏱ Ответ за ${d.responseDuration}` : null,
+    d.status === "done" && d.doneBy
+      ? `✅ Завершил: ${d.doneBy}${d.doneAt ? ` · ${d.doneAt}` : ""}` +
+        (d.resolutionDuration ? ` · за ${d.resolutionDuration}` : "")
+      : null,
     `Статус: ${statusLabel(d.status)}`,
   ];
   return lines.filter((l) => l !== null).join("\n");
@@ -159,4 +181,13 @@ export const adminText = {
     `✅ Эта группа сохранена как группа администраторов (ID: ${id}).`,
   whereami: (chatId: number, threadId?: number) =>
     `ID этого чата: ${chatId}` + (threadId ? `\nID темы (topic): ${threadId}` : ""),
+  staffPanel:
+    "🛎 Панель хозяина\n\n" +
+    "Вы вошли как сотрудник — гостевое меню вам не нужно. Работайте прямо в группе поддержки: " +
+    "отвечайте (reply) на карточки заявок, нажимайте «✅ Взять» и «✔️ Готово».\n\n" +
+    "Команды:\n" +
+    "/open — открытые заявки\n" +
+    "/occupancy — кто сейчас проживает\n" +
+    "/houses — домики и настройки\n" +
+    "/setwifi · /setcheckin · /setaddress — автоответы гостям",
 };

@@ -11,8 +11,13 @@ export const ru: GuestMessages = {
     `Чем можем помочь?`,
 
   menuPrompt: "Чем можем помочь?",
+  servicesTitle: "🛎 Чем помочь? Выберите нужное:",
+  infoTitle: "ℹ️ Полезная информация:",
+  inputPlaceholder: "Напишите сообщение…",
+  housePlaceholder: "Номер домика, напр. 1",
 
-  askHouseNumber: "Напишите, пожалуйста, номер вашего домика цифрой — например, 1.",
+  askHouseNumber: "Напишите номер вашего домика цифрой (например, 1) прямо здесь, в чат ⌨️",
+  chooseHouseTitle: "Выберите ваш домик:",
   houseNotFound: "Не нашли домик с таким номером. Проверьте, пожалуйста, и напишите ещё раз.",
   houseConfirm: (houseName) => `Ваш домик — «${houseName}». Всё верно?`,
   scanOrChooseHouse:
@@ -27,8 +32,8 @@ export const ru: GuestMessages = {
   photoReceived: "Фото получили — хозяева скоро посмотрят.",
   voiceReceived: "Голосовое получили — скоро прослушаем.",
   fileReceived: "Файл получили. Если это срочно — продублируйте, пожалуйста, коротко текстом.",
-  writeQuestion: "Напишите, пожалуйста, ваш вопрос одним сообщением — мы поможем.",
-  addCommentPrompt: "Добавьте комментарий, и мы передадим его хозяевам.",
+  writeQuestion: "✍️ Напишите ваш вопрос сообщением прямо здесь, в чат — и мы поможем.",
+  addCommentPrompt: "✍️ Напишите комментарий сообщением в чат — и мы всё передадим хозяевам.",
 
   drovaQuestion: "Принести дрова для камина или мангала?",
   linenQuestion: "Что принести?",
@@ -88,6 +93,8 @@ export const ru: GuestMessages = {
   languageChoose: "Выберите язык / Choose language:",
   languageSet: "Готово, переключили на русский 🇷🇺",
 
+  btnServices: "🛎 Услуги",
+  btnInfo: "ℹ️ Информация",
   btnBack: "⬅️ Назад",
   btnConfirmHouse: "✅ Да, верно",
   btnChangeHouse: "🔁 Другой домик",

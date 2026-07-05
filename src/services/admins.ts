@@ -1,3 +1,4 @@
+import type { Api } from "grammy";
 import { query, queryOne } from "../db/client";
 import { ownerIdNum } from "../config";
 import { resolveAdminGroupId } from "./settings";
@@ -26,6 +27,33 @@ export async function isAuthorizedActor(
   if (await isAuthorizedAdmin(telegramUserId)) return true;
   const groupId = await resolveAdminGroupId();
   return groupId != null && chatId === groupId;
+}
+
+// Cache staff-membership checks briefly to avoid a getChatMember call per message.
+const staffCache = new Map<number, { value: boolean; expires: number }>();
+
+/**
+ * Whether a user is staff (for hiding the guest menu from them in private
+ * chats): the owner, an explicit admin, or a member of the admin group.
+ */
+export async function isStaffUser(api: Api, telegramUserId: number): Promise<boolean> {
+  if (await isAuthorizedAdmin(telegramUserId)) return true;
+  const groupId = await resolveAdminGroupId();
+  if (groupId == null) return false;
+
+  const now = Date.now();
+  const cached = staffCache.get(telegramUserId);
+  if (cached && cached.expires > now) return cached.value;
+
+  let value = false;
+  try {
+    const member = await api.getChatMember(groupId, telegramUserId);
+    value = ["creator", "administrator", "member", "restricted"].includes(member.status);
+  } catch {
+    value = false; // not a member / not found
+  }
+  staffCache.set(telegramUserId, { value, expires: now + 5 * 60_000 });
+  return value;
 }
 
 /** True if the user is the configured owner or an active admin with owner role. */

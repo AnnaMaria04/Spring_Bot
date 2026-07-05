@@ -3,6 +3,8 @@ import type { MyContext } from "../context";
 import { config, type Language } from "../config";
 import { t } from "../messages";
 import { upsertGuest } from "../services/guests";
+import { isStaffUser } from "../services/admins";
+import { adminText } from "../messages/admin";
 import { resolveEmergencyPhone } from "../services/settings";
 import { buildMainMenu } from "../keyboards/guestMenu";
 import { intake } from "./intake";
@@ -38,6 +40,12 @@ function mediaPlaceholder(mediaType: string): string {
 export async function handleGuestMessage(ctx: MyContext): Promise<void> {
   const msg = ctx.message;
   if (!msg) return;
+
+  // Staff don't get the guest concierge — point them to the admin panel.
+  if (ctx.from && (await isStaffUser(ctx.api, ctx.from.id))) {
+    await ctx.reply(adminText.staffPanel);
+    return;
+  }
 
   const lang = await guestLang(ctx);
 

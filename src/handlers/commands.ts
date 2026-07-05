@@ -1,11 +1,13 @@
 import type { MyContext } from "../context";
 import { config, ownerIdNum, type Language } from "../config";
 import { t } from "../messages";
-import { adminText } from "../messages/admin";
+import { adminText, statusLabel, formatDuration } from "../messages/admin";
+import { categoryLabel } from "../categories";
 import { upsertGuest } from "../services/guests";
 import { getActiveStay } from "../services/stays";
 import {
   listAllHouses,
+  getHouseById,
   normalizeHouseCode,
   setHouseWifi,
   setHouseCheckin,
@@ -13,6 +15,7 @@ import {
   setHouseStatus,
   setHouseName,
 } from "../services/houses";
+import { listOpenRequests } from "../services/requests";
 import { resolveEmergencyPhone, setAdminGroupId } from "../services/settings";
 import { isOwner, addAdmin, deactivateAdmin, isAuthorizedActor } from "../services/admins";
 import { getOccupancy, moscowToday, bnovoConfigured } from "../services/bnovo";
@@ -310,4 +313,34 @@ export async function handleOccupancy(ctx: MyContext): Promise<void> {
   await ctx.reply(
     `🗓 Сейчас проживает:\n\n👤 ${r.occupant.name}\n📥 Заезд: ${r.occupant.arrival}\n📤 Выезд: ${r.occupant.departure}`
   );
+}
+
+// ── Open requests overview ──────────────────────────────────────
+
+/** List all still-open requests so staff can check nothing was forgotten. */
+export async function handleOpen(ctx: MyContext): Promise<void> {
+  const allowed =
+    (await canManage(ctx)) ||
+    (ctx.from ? await isAuthorizedActor(ctx.chat?.id, ctx.from.id) : false);
+  if (!allowed) {
+    await ctx.reply(adminText.notAuthorized);
+    return;
+  }
+  const open = await listOpenRequests();
+  if (open.length === 0) {
+    await ctx.reply("✅ Открытых заявок нет — всё закрыто.");
+    return;
+  }
+  const now = Date.now();
+  const blocks: string[] = [];
+  for (const r of open) {
+    const house = await getHouseById(r.house_id);
+    const age = formatDuration(now - new Date(r.created_at).getTime());
+    const who = r.assigned_admin_name ? `👷 ${r.assigned_admin_name}` : "🔸 не взят";
+    blocks.push(
+      `#${r.id} · ${house?.name ?? ""} · ${categoryLabel(r.category, "ru")}\n` +
+        `   ${statusLabel(r.status)} · ${who} · ${age} назад`
+    );
+  }
+  await ctx.reply(`📋 Открытые заявки (${open.length}):\n\n${blocks.join("\n\n")}`);
 }

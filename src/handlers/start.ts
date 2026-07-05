@@ -3,13 +3,19 @@ import { config, type Language } from "../config";
 import { t } from "../messages";
 import { upsertGuest } from "../services/guests";
 import { getActiveStay, startStay } from "../services/stays";
+import { isStaffUser } from "../services/admins";
+import { adminText } from "../messages/admin";
 import {
   getHouseByCode,
   getHouseById,
-  getSoleActiveHouse,
+  listActiveHouses,
   normalizeHouseCode,
 } from "../services/houses";
-import { buildMainMenu, buildHouseConfirmKeyboard } from "../keyboards/guestMenu";
+import {
+  buildMainMenu,
+  buildHouseConfirmKeyboard,
+  buildHousePicker,
+} from "../keyboards/guestMenu";
 
 /** Send the welcome screen with the main menu. */
 export async function sendWelcome(
@@ -29,17 +35,30 @@ export async function promptForHouse(ctx: MyContext, lang: Language): Promise<vo
   const from = ctx.from;
   if (!from) return;
   const guest = await upsertGuest(from);
+  const m = t(lang);
+  const houses = await listActiveHouses();
 
-  const sole = await getSoleActiveHouse();
-  if (sole) {
-    await startStay(guest.id, sole.id);
+  // One house → assign it automatically, no prompt at all.
+  if (houses.length === 1) {
+    await startStay(guest.id, houses[0].id);
     ctx.session.awaitingHouseNumber = false;
-    await sendWelcome(ctx, lang, sole.name);
+    await sendWelcome(ctx, lang, houses[0].name);
     return;
   }
 
+  // Several houses → accept a typed number, and additionally show tappable
+  // buttons when the list is short (friendlier than typing).
   ctx.session.awaitingHouseNumber = true;
-  await ctx.reply(t(lang).askHouseNumber);
+  if (houses.length >= 2 && houses.length <= 8) {
+    await ctx.reply(m.chooseHouseTitle, { reply_markup: buildHousePicker(houses) });
+    return;
+  }
+  await ctx.reply(m.askHouseNumber, {
+    reply_markup: {
+      force_reply: true,
+      input_field_placeholder: m.housePlaceholder.slice(0, 64),
+    },
+  });
 }
 
 /** Resolve a typed house number into a stay. Returns true on success. */
@@ -68,6 +87,12 @@ export async function handleStart(ctx: MyContext): Promise<void> {
   if (!from) return;
   // /start is a guest action; ignore it in the admin group (no session there).
   if (ctx.chat?.type !== "private") return;
+
+  // Staff don't get the guest concierge — show them the admin panel instead.
+  if (await isStaffUser(ctx.api, from.id)) {
+    await ctx.reply(adminText.staffPanel);
+    return;
+  }
 
   // Fresh start clears any half-finished flow.
   ctx.session.pending = null;
