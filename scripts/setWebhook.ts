@@ -1,5 +1,6 @@
 import { Bot } from "grammy";
 import { config } from "../src/config";
+import { registerBotCommands } from "../src/telegramCommands";
 
 /**
  * Register (or delete) the Telegram webhook and set the bot's command list,
@@ -30,12 +31,7 @@ async function main(): Promise<void> {
     drop_pending_updates: false,
   });
 
-  await bot.api.setMyCommands([
-    { command: "start", description: "Открыть чат поддержки" },
-    { command: "menu", description: "Меню запросов" },
-    { command: "help", description: "Помощь" },
-    { command: "call", description: "Телефон администратора" },
-  ]);
+  await registerBotCommands(bot.api);
   await bot.api.setMyDescription("Чат поддержки гостей Spring Village.");
   await bot.api.setMyShortDescription("Помощь гостям Spring Village во время проживания.");
 

@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { Bot } from "grammy";
+import { registerBotCommands } from "../src/telegramCommands";
 
 /**
  * One-time setup / status endpoint.
@@ -61,12 +62,7 @@ export default async function handler(
         allowed_updates: ["message", "callback_query"],
         drop_pending_updates: false,
       });
-      await bot.api.setMyCommands([
-        { command: "start", description: "Открыть чат поддержки" },
-        { command: "menu", description: "Меню запросов" },
-        { command: "help", description: "Помощь" },
-        { command: "call", description: "Телефон администратора" },
-      ]);
+      await registerBotCommands(bot.api);
       await bot.api.setMyDescription("Чат поддержки гостей Spring Village.");
       await bot.api.setMyShortDescription(
         "Помощь гостям Spring Village во время проживания."

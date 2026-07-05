@@ -5,11 +5,13 @@ import { t } from "../messages";
 import type { House } from "../types";
 
 const SERVICE_KEYS: CategoryKey[] = ["drova", "linen", "cleaning", "gear", "bbq", "broken"];
-const INFO_KEYS: CategoryKey[] = ["wifi", "activities", "checkout", "rules", "address"];
+// "call" lives in Info, not on the main screen — it's an escalation, not an
+// everyday action, so it only appears once the guest is already looking for help.
+const INFO_KEYS: CategoryKey[] = ["wifi", "activities", "checkout", "rules", "address", "call"];
 
 /**
- * Compact top-level menu: two groups plus the two direct actions. Keeping it to
- * four buttons avoids overwhelming the guest; services/info drill down.
+ * Compact top-level menu: two groups plus one direct action. Keeping it small
+ * avoids overwhelming the guest; services/info drill down.
  */
 export function buildMainMenu(lang: Language): InlineKeyboard {
   const m = t(lang);
@@ -17,9 +19,7 @@ export function buildMainMenu(lang: Language): InlineKeyboard {
     .text(m.btnServices, "group:services")
     .text(m.btnInfo, "group:info")
     .row()
-    .text(categoryButtonLabel("other", lang), "cat:other")
-    .row()
-    .text(categoryButtonLabel("call", lang), "cat:call");
+    .text(categoryButtonLabel("other", lang), "cat:other");
 }
 
 function gridMenu(keys: CategoryKey[], lang: Language, backTo: string): InlineKeyboard {

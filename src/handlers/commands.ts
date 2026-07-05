@@ -1,3 +1,5 @@
+import { InputFile } from "grammy";
+import QRCode from "qrcode";
 import type { MyContext } from "../context";
 import { config, ownerIdNum, type Language } from "../config";
 import { t } from "../messages";
@@ -8,6 +10,7 @@ import { getActiveStay } from "../services/stays";
 import {
   listAllHouses,
   getHouseById,
+  getHouseByCode,
   normalizeHouseCode,
   setHouseWifi,
   setHouseCheckin,
@@ -172,8 +175,35 @@ export async function handleHouses(ctx: MyContext): Promise<void> {
     "Автоответы гостям:\n" +
     "/setwifi <код> <сеть> <пароль>\n" +
     "/setcheckin <код> <текст про заезд/выезд>\n" +
-    "/setaddress <код> <адрес / как добраться>";
+    "/setaddress <код> <адрес / как добраться>\n\n" +
+    "QR-код для гостей:\n" +
+    "/qr <код> — прислать QR-код домика (распечатайте и разместите в домике: гость сканирует и сразу попадает в чат с этим домиком)";
   await ctx.reply((lines.join("\n") || "Домиков нет.") + help);
+}
+
+/** Send a printable QR code that deep-links straight into a specific house's chat. */
+export async function handleQr(ctx: MyContext): Promise<void> {
+  if (!(await canManage(ctx))) {
+    await ctx.reply(adminText.notAuthorized);
+    return;
+  }
+  const code = normalizeHouseCode((typeof ctx.match === "string" ? ctx.match : "").trim());
+  if (!code) {
+    await ctx.reply("Использование: /qr <код домика>, например /qr h1");
+    return;
+  }
+  const house = await getHouseByCode(code);
+  if (!house) {
+    await ctx.reply(`Домик «${code}» не найден.`);
+    return;
+  }
+  const link = `https://t.me/${config.publicBotUsername}?start=${house.code}`;
+  const png = await QRCode.toBuffer(link, { width: 800, margin: 2 });
+  await ctx.replyWithPhoto(new InputFile(png, `${house.code}.png`), {
+    caption:
+      `📷 QR-код «${house.name}» (${house.code})\n${link}\n\n` +
+      "Распечатайте и разместите в домике — гость отсканирует и сразу попадёт в чат с этим домиком.",
+  });
 }
 
 export async function handleEnableHouse(ctx: MyContext): Promise<void> {
