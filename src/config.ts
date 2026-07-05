@@ -52,6 +52,11 @@ export const config = {
   port: optionalNumber("PORT", 8080),
   followupWindowMinutes: optionalNumber("FOLLOWUP_WINDOW_MINUTES", 10),
 
+  // A stay auto-expires after this many days of no fresh QR scan / house
+  // switch, so a guest who visited long ago isn't silently welcomed back
+  // into their old house on a bare /start.
+  stayTtlDays: optionalNumber("STAY_TTL_DAYS", 14),
+
   // Vercel sets this automatically; used to tune the DB pool size.
   isServerless: Boolean(process.env.VERCEL || process.env.AWS_REGION),
 } as const;

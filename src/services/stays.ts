@@ -1,12 +1,26 @@
 import { queryOne, withTransaction } from "../db/client";
+import { config } from "../config";
 import type { Stay } from "../types";
 
-/** The guest's current active stay, or null. */
-export function getActiveStay(guestId: number): Promise<Stay | null> {
-  return queryOne<Stay>(
+/**
+ * The guest's current active stay, or null. A stay older than STAY_TTL_DAYS
+ * is treated as over and closed out here — otherwise a guest who visited
+ * long ago would be silently welcomed back into their old house on a bare
+ * /start instead of being asked to select their (new) house.
+ */
+export async function getActiveStay(guestId: number): Promise<Stay | null> {
+  const stay = await queryOne<Stay>(
     "SELECT * FROM stays WHERE guest_id = $1 AND status = 'active' ORDER BY id DESC LIMIT 1",
     [guestId]
   );
+  if (!stay) return null;
+
+  const ageMs = Date.now() - new Date(stay.check_in).getTime();
+  if (ageMs > config.stayTtlDays * 24 * 60 * 60 * 1000) {
+    await completeStay(stay.id);
+    return null;
+  }
+  return stay;
 }
 
 /**
