@@ -21,6 +21,7 @@ import {
   refreshCard,
   postUrgentAlert,
   sendInfoCard,
+  replyToStored,
 } from "../services/notifications";
 import { promptForHouse } from "./start";
 import { createCategorizedRequest } from "./intake";
@@ -185,9 +186,16 @@ async function handleGuestCallbackInner(ctx: MyContext, data: string): Promise<v
     });
     await ctx.answerCallbackQuery();
     if (res.ok) {
-      // For technical issues a photo speeds things up (spec recommendation).
-      const extra = category === "broken" ? res.m.brokenPhotoHint : "";
-      await editOrReply(ctx, res.m.requestReceived + extra, { reply_markup: backKb(lang) });
+      if (!res.delivered) {
+        // Don't confirm a request the admin group never actually received.
+        await editOrReply(ctx, res.m.genericError(await resolveEmergencyPhone()), {
+          reply_markup: backKb(lang),
+        });
+      } else {
+        // For technical issues a photo speeds things up (spec recommendation).
+        const extra = category === "broken" ? res.m.brokenPhotoHint : "";
+        await editOrReply(ctx, res.m.requestReceived + extra, { reply_markup: backKb(lang) });
+      }
     }
     return;
   }
@@ -213,12 +221,18 @@ async function handleCategory(
       priority: "urgent",
     });
     if (res.ok && res.req && res.house) {
-      await postUrgentAlert(
+      // The phone number below is always shown regardless — this alert is a
+      // bonus, not the guest's only path to help — but a failure here still
+      // means staff won't see it proactively, so it's worth a server log.
+      const alerted = await postUrgentAlert(
         ctx.api,
         res.req,
         res.house,
         formatGuestName(ctx.from?.first_name, ctx.from?.username)
       );
+      if (!alerted) {
+        console.error(`[callbacks] urgent alert failed to deliver for request #${res.req.id}`);
+      }
     }
     await editOrReply(ctx, m.emergency(phone), { reply_markup: backKb(lang, "group:info") });
     return;
@@ -232,11 +246,16 @@ async function handleCategory(
         reply_markup: backKb(lang, "group:info"),
       });
     } else {
-      await createCategorizedRequest(ctx, {
+      const res = await createCategorizedRequest(ctx, {
         category: "wifi",
         summary: "Гость спрашивает данные Wi-Fi.",
       });
-      await editOrReply(ctx, m.wifiMissing, { reply_markup: backKb(lang, "group:info") });
+      if (!res.ok) return; // promptForHouse/genericError already shown
+      await editOrReply(
+        ctx,
+        res.delivered ? m.wifiMissing : m.genericError(await resolveEmergencyPhone()),
+        { reply_markup: backKb(lang, "group:info") }
+      );
     }
     return;
   }
@@ -360,12 +379,12 @@ async function handleAdminCallback(ctx: MyContext, data: string): Promise<void> 
       const guestNotified = await notifyGuest(ctx, req.guest_id, (m) => m.done);
       if (!guestNotified) {
         await ctx.reply(adminText.guestBlocked, {
-          reply_to_message_id: req.admin_message_id ?? undefined,
+          reply_parameters: replyToStored(req.admin_message_id),
         });
       }
       const house = await getHouseById(req.house_id);
       const hint = await ctx.reply(adminText.doneWithPhotoHint, {
-        reply_to_message_id: req.admin_message_id ?? undefined,
+        reply_parameters: replyToStored(req.admin_message_id),
         message_thread_id: house?.topic_id ?? undefined,
       });
       // Track this message too, so a staff reply to the hint itself (not just
@@ -386,8 +405,10 @@ async function handleAdminCallback(ctx: MyContext, data: string): Promise<void> 
       return;
     }
     case "info": {
-      await sendInfoCard(ctx.api, req);
-      await ctx.answerCallbackQuery();
+      const sent = await sendInfoCard(ctx.api, req);
+      await ctx.answerCallbackQuery(
+        sent ? undefined : { text: "Не удалось отправить, попробуйте ещё раз.", show_alert: true }
+      );
       return;
     }
     default:
