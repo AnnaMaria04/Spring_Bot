@@ -83,6 +83,13 @@ async function handleGuestCallback(ctx: MyContext, data: string): Promise<void> 
   const lang = await guestLang(ctx);
   const m = t(lang);
 
+  // Any button press supersedes a pending ForceReply prompt — otherwise a
+  // guest who changes their mind and taps a different button (instead of
+  // typing) leaves stale state around, and their next message would get
+  // misfiled under whatever they were asked about before. Handlers below
+  // that need a fresh prompt (catcomment / "other") set it again right after.
+  ctx.session.pending = null;
+
   // House selection / confirmation
   if (data.startsWith("house_confirm:") || data.startsWith("house_pick:")) {
     const code = data.split(":")[1];
@@ -106,7 +113,6 @@ async function handleGuestCallback(ctx: MyContext, data: string): Promise<void> 
 
   if (data === "menu_back") {
     await ctx.answerCallbackQuery();
-    ctx.session.pending = null;
     await editOrReply(ctx, m.menuPrompt, { reply_markup: buildMainMenu(lang) });
     return;
   }
@@ -114,13 +120,11 @@ async function handleGuestCallback(ctx: MyContext, data: string): Promise<void> 
   // Menu groups
   if (data === "group:services") {
     await ctx.answerCallbackQuery();
-    ctx.session.pending = null;
     await editOrReply(ctx, m.servicesTitle, { reply_markup: buildServicesMenu(lang) });
     return;
   }
   if (data === "group:info") {
     await ctx.answerCallbackQuery();
-    ctx.session.pending = null;
     await editOrReply(ctx, m.infoTitle, { reply_markup: buildInfoMenu(lang) });
     return;
   }
@@ -196,7 +200,7 @@ async function handleCategory(
         formatGuestName(ctx.from?.first_name, ctx.from?.username)
       );
     }
-    await editOrReply(ctx, m.emergency(phone));
+    await editOrReply(ctx, m.emergency(phone), { reply_markup: backKb(lang) });
     return;
   }
 
@@ -321,6 +325,11 @@ async function handleAdminCallback(ctx: MyContext, data: string): Promise<void> 
       await refreshCard(ctx.api, requestId);
       await ctx.answerCallbackQuery({ text: adminText.markedDone(requestId) });
       await notifyGuest(ctx, req.guest_id, (m) => m.done);
+      const house = await getHouseById(req.house_id);
+      await ctx.reply(adminText.doneWithPhotoHint, {
+        reply_to_message_id: req.admin_message_id ?? undefined,
+        message_thread_id: house?.topic_id ?? undefined,
+      });
       return;
     }
     case "reopen": {

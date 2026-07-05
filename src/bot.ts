@@ -42,6 +42,7 @@ export function createBot(): Bot<MyContext> {
   bot.command("setaddress", cmd.handleSetAddress);
   bot.command("occupancy", cmd.handleOccupancy);
   bot.command("open", cmd.handleOpen);
+  bot.command("qr", cmd.handleQr);
 
   // Inline button presses (guest navigation + admin actions).
   bot.on("callback_query:data", handleCallback);
