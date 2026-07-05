@@ -59,9 +59,10 @@ function backKb(lang: Language): InlineKeyboard {
 /**
  * Prompt the guest for free text using ForceReply — this auto-opens the
  * keyboard with a placeholder hint, so it's obvious they should just type.
+ * Returns the sent message so its id can be tracked and deleted if abandoned.
  */
-async function askText(ctx: MyContext, text: string, placeholder: string): Promise<void> {
-  await ctx.reply(text, {
+async function askText(ctx: MyContext, text: string, placeholder: string) {
+  return ctx.reply(text, {
     reply_markup: { force_reply: true, input_field_placeholder: placeholder.slice(0, 64) },
   });
 }
@@ -86,8 +87,15 @@ async function handleGuestCallback(ctx: MyContext, data: string): Promise<void> 
   // Any button press supersedes a pending ForceReply prompt — otherwise a
   // guest who changes their mind and taps a different button (instead of
   // typing) leaves stale state around, and their next message would get
-  // misfiled under whatever they were asked about before. Handlers below
-  // that need a fresh prompt (catcomment / "other") set it again right after.
+  // misfiled under whatever they were asked about before. Delete the now-
+  // meaningless "please type..." prompt too, so it doesn't linger in the
+  // chat. Handlers below that need a fresh prompt (catcomment / "other")
+  // set it again right after.
+  if (ctx.session.pending?.promptMessageId && ctx.chat) {
+    await ctx.api
+      .deleteMessage(ctx.chat.id, ctx.session.pending.promptMessageId)
+      .catch(() => undefined);
+  }
   ctx.session.pending = null;
 
   // House selection / confirmation
@@ -147,9 +155,9 @@ async function handleGuestCallback(ctx: MyContext, data: string): Promise<void> 
   // Add a free-text comment for a category: catcomment:<key>
   if (data.startsWith("catcomment:")) {
     const category = data.split(":")[1];
-    ctx.session.pending = { kind: "new_request_text", category };
     await ctx.answerCallbackQuery();
-    await askText(ctx, m.addCommentPrompt, m.inputPlaceholder);
+    const sent = await askText(ctx, m.addCommentPrompt, m.inputPlaceholder);
+    ctx.session.pending = { kind: "new_request_text", category, promptMessageId: sent.message_id };
     return;
   }
 
@@ -247,8 +255,12 @@ async function handleCategory(
 
   // Free-text — ForceReply makes it obvious the guest should just type.
   if (key === "other") {
-    ctx.session.pending = { kind: "new_request_text", category: "other" };
-    await askText(ctx, m.writeQuestion, m.inputPlaceholder);
+    const sent = await askText(ctx, m.writeQuestion, m.inputPlaceholder);
+    ctx.session.pending = {
+      kind: "new_request_text",
+      category: "other",
+      promptMessageId: sent.message_id,
+    };
     return;
   }
 

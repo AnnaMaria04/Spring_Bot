@@ -9,11 +9,13 @@ import {
   createRequest,
   getLatestOpenRequest,
   touchRequest,
+  updateStatus,
 } from "../services/requests";
 import {
   copyGuestMedia,
   postFollowup,
   postRequestCard,
+  refreshCard,
 } from "../services/notifications";
 import { resolveEmergencyPhone } from "../services/settings";
 import { promptForHouse } from "./start";
@@ -78,10 +80,20 @@ export async function intake(ctx: MyContext, opts: IntakeOptions): Promise<void>
 
   let req = opts.forceNew
     ? null
-    : await getLatestOpenRequest(guest.id, config.followupWindowMinutes);
+    : await getLatestOpenRequest(
+        guest.id,
+        config.followupWindowMinutes,
+        config.doneFollowupWindowMinutes
+      );
 
   if (req) {
     await touchRequest(req.id);
+    // The guest answered while we were waiting on them — ball's back in the
+    // admins' court. A "done" request stays done; this only ever un-waits.
+    if (req.status === "waiting_guest") {
+      await updateStatus(req.id, "in_progress");
+      await refreshCard(ctx.api, req.id);
+    }
     if (isMedia && opts.sourceMessageId) {
       await copyGuestMedia(ctx.api, req, house, chat.id, opts.sourceMessageId, opts.mediaType!);
     } else {

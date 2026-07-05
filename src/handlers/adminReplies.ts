@@ -6,6 +6,7 @@ import {
   findRequestByAdminMessage,
   assignAdmin,
   recordFirstReply,
+  updateStatus,
 } from "../services/requests";
 import {
   deliverReplyToGuest,
@@ -70,8 +71,14 @@ export async function handleAdminMessage(ctx: MyContext): Promise<void> {
   }
 
   if (delivered) {
-    // Record response time on first reply, refresh the card, and confirm quietly.
+    // Record response time on first reply. For a normal open request, mark it
+    // "waiting_guest" so a slow reply still threads into this request instead
+    // of the follow-up window forcing a new one (done/urgent/cancelled are
+    // left alone — see getLatestOpenRequest).
     await recordFirstReply(req.id);
+    if (req.status === "new" || req.status === "in_progress") {
+      await updateStatus(req.id, "waiting_guest");
+    }
     await refreshCard(ctx.api, req.id);
     await ctx.react("👍").catch(() => undefined);
   } else {

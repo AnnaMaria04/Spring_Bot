@@ -51,6 +51,10 @@ export const config = {
 
   port: optionalNumber("PORT", 8080),
   followupWindowMinutes: optionalNumber("FOLLOWUP_WINDOW_MINUTES", 10),
+  // A reply just after a request was marked "done" (e.g. guest says "thanks")
+  // still quietly attaches to that request instead of opening a fresh one —
+  // but only within this much longer window, and without reopening it.
+  doneFollowupWindowMinutes: optionalNumber("DONE_FOLLOWUP_WINDOW_MINUTES", 60),
 
   // A stay auto-expires after this many days of no fresh QR scan / house
   // switch, so a guest who visited long ago isn't silently welcomed back

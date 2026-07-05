@@ -6,7 +6,12 @@ import type { Context, SessionFlavor } from "grammy";
  * (e.g. after tapping "Другой вопрос" or "Добавить комментарий").
  */
 export interface SessionData {
-  pending?: { kind: "new_request_text"; category: string } | null;
+  pending?: {
+    kind: "new_request_text";
+    category: string;
+    /** The ForceReply prompt's message id, so it can be deleted if abandoned. */
+    promptMessageId?: number;
+  } | null;
   /** True while we're waiting for the guest to type their house number. */
   awaitingHouseNumber?: boolean;
 }

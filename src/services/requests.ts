@@ -40,19 +40,33 @@ export function getRequestById(id: number): Promise<ServiceRequest | null> {
   return queryOne<ServiceRequest>("SELECT * FROM requests WHERE id = $1", [id]);
 }
 
-/** The guest's most recent still-open request updated within `withinMinutes`. */
+const TIME_LIMITED_STATUSES: RequestStatus[] = ["new", "in_progress", "urgent"];
+
+/**
+ * The guest's most recent request to fold a follow-up message into, or null
+ * to start a fresh one. "waiting_guest" (an admin just replied and is
+ * expecting this response) always matches, however long it's been — other
+ * open statuses only match within `withinMinutes`. A just-completed request
+ * also matches within the longer `doneWithinMinutes` grace window (e.g. a
+ * "thanks!" after done shouldn't open a new actionable thread), but that
+ * never reopens it — status is left untouched by the caller in that case.
+ */
 export function getLatestOpenRequest(
   guestId: number,
-  withinMinutes: number
+  withinMinutes: number,
+  doneWithinMinutes: number
 ): Promise<ServiceRequest | null> {
   return queryOne<ServiceRequest>(
     `SELECT * FROM requests
        WHERE guest_id = $1
-         AND status = ANY($2)
-         AND updated_at > now() - make_interval(mins => $3)
+         AND (
+           status = 'waiting_guest'
+           OR (status = ANY($2) AND updated_at > now() - make_interval(mins => $3))
+           OR (status = 'done' AND updated_at > now() - make_interval(mins => $4))
+         )
        ORDER BY updated_at DESC
        LIMIT 1`,
-    [guestId, OPEN_STATUSES, withinMinutes]
+    [guestId, TIME_LIMITED_STATUSES, withinMinutes, doneWithinMinutes]
   );
 }
 
