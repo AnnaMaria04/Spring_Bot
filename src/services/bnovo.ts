@@ -14,7 +14,7 @@ const BASE = "https://online.bnovo.ru";
 let cachedToken: { token: string; expiresAt: number } | null = null;
 
 export function bnovoConfigured(): boolean {
-  return !!config.bnovoApiKey;
+  return !!config.bnovoApiKey && !!config.bnovoAccountId;
 }
 
 /** Today's date (YYYY-MM-DD) in Moscow time. */
@@ -93,24 +93,29 @@ async function authRequest(id: string, password: string) {
 }
 
 /**
- * Bnovo's "Старт" panel gives one copyable string for id + password, joined
- * with "|" (a base64 secret and a hex account id). Which half is which isn't
- * documented, so try one order and fall back to the other on 401.
+ * Bnovo's account id (shown plainly in the dashboard, e.g. "ID 120639") is the
+ * `id`; the copyable "API-ключ" is the `password`. Whether that key is used
+ * verbatim or needs a base64 decode first isn't documented, so try verbatim
+ * first and fall back to the decoded form on 401.
  */
 async function authenticate(): Promise<string> {
   const now = Date.now();
   if (cachedToken && cachedToken.expiresAt > now + 30_000) return cachedToken.token;
 
-  const [a, b] = config.bnovoApiKey.split("|");
-  if (!a || !b) {
-    throw new Error(
-      "BNOVO_API_KEY не похож на пару id|password — проверьте значение в Vercel."
-    );
-  }
+  const id = config.bnovoAccountId;
+  const rawKey = config.bnovoApiKey;
 
-  let { res, text } = await authRequest(b, a);
+  let { res, text } = await authRequest(id, rawKey);
   if (res.status === 401) {
-    ({ res, text } = await authRequest(a, b));
+    let decoded: string | undefined;
+    try {
+      decoded = Buffer.from(rawKey, "base64").toString("utf8");
+    } catch {
+      decoded = undefined;
+    }
+    if (decoded && decoded !== rawKey) {
+      ({ res, text } = await authRequest(id, decoded));
+    }
   }
   if (!res.ok) throw new Error(`auth → HTTP ${res.status}: ${text.slice(0, 300)}`);
 

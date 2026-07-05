@@ -327,7 +327,7 @@ export async function handleOccupancy(ctx: MyContext): Promise<void> {
   }
   if (!bnovoConfigured()) {
     await ctx.reply(
-      "Bnovo не подключён. Добавьте переменную BNOVO_API_KEY в Vercel → Settings → Environment Variables и сделайте Redeploy."
+      "Bnovo не подключён. Добавьте переменные BNOVO_API_KEY и BNOVO_ACCOUNT_ID (ID аккаунта из панели Bnovo) в Vercel → Settings → Environment Variables и сделайте Redeploy."
     );
     return;
   }

@@ -44,9 +44,10 @@ export const config = {
   emergencyPhone: optional("EMERGENCY_PHONE", "+7 (911) 110-16-52"),
   publicBotUsername: optional("PUBLIC_BOT_USERNAME", "SpringVillage_Chatbot"),
 
-  // Bnovo Open API «Старт» key (read-only bookings). Optional — occupancy
-  // features are simply skipped when it is not set.
+  // Bnovo Open API «Старт» credentials (read-only bookings). Optional —
+  // occupancy features are simply skipped when they are not set.
   bnovoApiKey: optional("BNOVO_API_KEY"),
+  bnovoAccountId: optional("BNOVO_ACCOUNT_ID"),
 
   port: optionalNumber("PORT", 8080),
   followupWindowMinutes: optionalNumber("FOLLOWUP_WINDOW_MINUTES", 10),
