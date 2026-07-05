@@ -5,6 +5,7 @@ import { isAuthorizedActor } from "../services/admins";
 import {
   findRequestByAdminMessage,
   assignAdmin,
+  recordFirstReply,
 } from "../services/requests";
 import {
   deliverReplyToGuest,
@@ -69,7 +70,9 @@ export async function handleAdminMessage(ctx: MyContext): Promise<void> {
   }
 
   if (delivered) {
-    // Quiet confirmation so the group stays readable.
+    // Record response time on first reply, refresh the card, and confirm quietly.
+    await recordFirstReply(req.id);
+    await refreshCard(ctx.api, req.id);
     await ctx.react("👍").catch(() => undefined);
   } else {
     await ctx.reply(adminText.guestBlocked, { reply_to_message_id: msg.message_id });

@@ -2,35 +2,42 @@ import { InlineKeyboard } from "grammy";
 import type { Language } from "../config";
 import { categoryButtonLabel, type CategoryKey } from "../categories";
 import { t } from "../messages";
+import type { House } from "../types";
 
-/** Main in-stay concierge menu: services, instant info, and contact. */
+const SERVICE_KEYS: CategoryKey[] = ["drova", "linen", "cleaning", "gear", "bbq", "broken"];
+const INFO_KEYS: CategoryKey[] = ["wifi", "activities", "checkout", "rules", "address"];
+
+/**
+ * Compact top-level menu: two groups plus the two direct actions. Keeping it to
+ * four buttons avoids overwhelming the guest; services/info drill down.
+ */
 export function buildMainMenu(lang: Language): InlineKeyboard {
-  const order: CategoryKey[] = [
-    // Services
-    "drova",
-    "linen",
-    "cleaning",
-    "gear",
-    "bbq",
-    "broken",
-    // Info (instant)
-    "wifi",
-    "activities",
-    "checkout",
-    "rules",
-    "address",
-    // Contact
-    "other",
-    "call",
-  ];
+  const m = t(lang);
+  return new InlineKeyboard()
+    .text(m.btnServices, "group:services")
+    .text(m.btnInfo, "group:info")
+    .row()
+    .text(categoryButtonLabel("other", lang), "cat:other")
+    .row()
+    .text(categoryButtonLabel("call", lang), "cat:call");
+}
+
+function gridMenu(keys: CategoryKey[], lang: Language, backTo: string): InlineKeyboard {
   const kb = new InlineKeyboard();
-  order.forEach((key, i) => {
+  keys.forEach((key, i) => {
     kb.text(categoryButtonLabel(key, lang), `cat:${key}`);
-    if (key === "call") return; // last item, own row
     if (i % 2 === 1) kb.row();
   });
-  kb.row();
+  kb.row().text(t(lang).btnBack, backTo);
   return kb;
+}
+
+export function buildServicesMenu(lang: Language): InlineKeyboard {
+  return gridMenu(SERVICE_KEYS, lang, "menu_back");
+}
+
+export function buildInfoMenu(lang: Language): InlineKeyboard {
+  return gridMenu(INFO_KEYS, lang, "menu_back");
 }
 
 /** Confirm / change the detected house. */
@@ -45,14 +52,25 @@ export function buildHouseConfirmKeyboard(
     .text(m.btnChangeHouse, "house_change");
 }
 
-/** Sub-menu for a category. Info-only categories get a Back button; free-text
- *  categories return null (handled by the caller). */
+/** Tappable house picker (used when a handful of houses are active). */
+export function buildHousePicker(houses: House[]): InlineKeyboard {
+  const kb = new InlineKeyboard();
+  houses.forEach((h, i) => {
+    kb.text(h.name, `house_pick:${h.code}`);
+    if (i % 2 === 1) kb.row();
+  });
+  kb.row();
+  return kb;
+}
+
+/** Sub-menu for a category. Service categories go back to the services group;
+ *  info categories go back to the info group; free-text categories return null. */
 export function buildCategoryKeyboard(
   category: CategoryKey,
   lang: Language
 ): InlineKeyboard | null {
   const m = t(lang);
-  const back = () => new InlineKeyboard().text(m.btnBack, "menu_back");
+  const backServices = m.btnBack;
 
   switch (category) {
     case "drova":
@@ -61,7 +79,7 @@ export function buildCategoryKeyboard(
         .row()
         .text(m.btnAddComment, "catcomment:drova")
         .row()
-        .text(m.btnBack, "menu_back");
+        .text(backServices, "group:services");
     case "linen":
       return new InlineKeyboard()
         .text(m.btnTowels, "req:linen:towels")
@@ -70,7 +88,7 @@ export function buildCategoryKeyboard(
         .text(m.btnPaper, "req:linen:paper")
         .text(m.btnOther, "catcomment:linen")
         .row()
-        .text(m.btnBack, "menu_back");
+        .text(backServices, "group:services");
     case "cleaning":
       return new InlineKeyboard()
         .text(m.btnCleaning, "req:cleaning:clean")
@@ -78,7 +96,7 @@ export function buildCategoryKeyboard(
         .row()
         .text(m.btnOther, "catcomment:cleaning")
         .row()
-        .text(m.btnBack, "menu_back");
+        .text(backServices, "group:services");
     case "gear":
       return new InlineKeyboard()
         .text(m.btnBoat, "req:gear:boat")
@@ -87,7 +105,7 @@ export function buildCategoryKeyboard(
         .text(m.btnBikes, "req:gear:bike")
         .text(m.btnOther, "catcomment:gear")
         .row()
-        .text(m.btnBack, "menu_back");
+        .text(backServices, "group:services");
     case "bbq":
       return new InlineKeyboard()
         .text(m.btnGrill, "req:bbq:coals")
@@ -95,7 +113,7 @@ export function buildCategoryKeyboard(
         .row()
         .text(m.btnOther, "catcomment:bbq")
         .row()
-        .text(m.btnBack, "menu_back");
+        .text(backServices, "group:services");
     case "broken":
       return new InlineKeyboard()
         .text(m.btnLight, "req:broken:light")
@@ -107,13 +125,13 @@ export function buildCategoryKeyboard(
         .text(m.btnWifi, "req:broken:wifi")
         .text(m.btnOther, "catcomment:broken")
         .row()
-        .text(m.btnBack, "menu_back");
+        .text(backServices, "group:services");
     case "wifi":
     case "activities":
     case "checkout":
     case "rules":
     case "address":
-      return back();
+      return new InlineKeyboard().text(m.btnBack, "group:info");
     default:
       return null;
   }

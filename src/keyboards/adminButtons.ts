@@ -23,8 +23,6 @@ export function buildAdminKeyboard(
     .text("💬 Ответить", `reply:${requestId}`)
     .row()
     .text("✔️ Готово", `done:${requestId}`)
-    .text("🚨 Срочно", `urgent:${requestId}`)
-    .row()
     .text("📄 Инфо", `info:${requestId}`);
 
   return kb;

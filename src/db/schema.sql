@@ -60,6 +60,10 @@ CREATE TABLE IF NOT EXISTS requests (
   summary             TEXT,                            -- short text shown on the request card
   assigned_admin_id   BIGINT,                          -- telegram_user_id of admin who took it
   assigned_admin_name TEXT,                            -- display name of that admin (for the card)
+  taken_at            TIMESTAMPTZ,                     -- when an admin took it
+  first_reply_at      TIMESTAMPTZ,                     -- when the guest first got a reply (response time)
+  done_at             TIMESTAMPTZ,                     -- when it was completed
+  done_by_name        TEXT,                            -- who completed it
   admin_chat_id       BIGINT,                          -- chat where the request card was posted
   admin_message_id    BIGINT,                          -- message id of the request card
   created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),

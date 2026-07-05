@@ -3,7 +3,12 @@ export interface GuestMessages {
   // Welcome & house
   welcome(houseName: string): string;
   menuPrompt: string;
+  servicesTitle: string;
+  infoTitle: string;
+  inputPlaceholder: string;
+  housePlaceholder: string;
   askHouseNumber: string;
+  chooseHouseTitle: string;
   houseNotFound: string;
   houseConfirm(houseName: string): string;
   scanOrChooseHouse: string;
@@ -46,6 +51,8 @@ export interface GuestMessages {
   languageSet: string;
 
   // Guest button labels
+  btnServices: string;
+  btnInfo: string;
   btnBack: string;
   btnConfirmHouse: string;
   btnChangeHouse: string;

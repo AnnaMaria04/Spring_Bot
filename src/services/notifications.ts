@@ -13,10 +13,12 @@ import {
   renderUrgentAlert,
   formatGuestName,
   formatTime,
+  formatDuration,
   type AdminCardData,
 } from "../messages/admin";
 
 function cardData(req: ServiceRequest, guestName: string, houseName: string): AdminCardData {
+  const createdMs = new Date(req.created_at).getTime();
   return {
     requestId: req.id,
     houseName,
@@ -26,6 +28,15 @@ function cardData(req: ServiceRequest, guestName: string, houseName: string): Ad
     message: req.summary ?? "",
     status: req.status,
     assignedName: req.assigned_admin_name,
+    takenAt: req.taken_at ? formatTime(new Date(req.taken_at)) : null,
+    responseDuration: req.first_reply_at
+      ? formatDuration(new Date(req.first_reply_at).getTime() - createdMs)
+      : null,
+    doneBy: req.done_by_name,
+    doneAt: req.done_at ? formatTime(new Date(req.done_at)) : null,
+    resolutionDuration: req.done_at
+      ? formatDuration(new Date(req.done_at).getTime() - createdMs)
+      : null,
     priority: req.priority,
   };
 }

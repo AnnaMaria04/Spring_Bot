@@ -11,8 +11,13 @@ export const en: GuestMessages = {
     `How can we help?`,
 
   menuPrompt: "How can we help?",
+  servicesTitle: "🛎 What do you need?",
+  infoTitle: "ℹ️ Useful information:",
+  inputPlaceholder: "Type your message…",
+  housePlaceholder: "House number, e.g. 1",
 
-  askHouseNumber: "Please type your house number as a digit — for example, 1.",
+  askHouseNumber: "Type your house number as a digit (for example, 1) right here in the chat ⌨️",
+  chooseHouseTitle: "Choose your house:",
   houseNotFound: "We couldn't find a house with that number. Please check and type it again.",
   houseConfirm: (houseName) => `Your house is "${houseName}". Is that correct?`,
   scanOrChooseHouse: "Please type your house number so we know where to route your request.",
@@ -25,8 +30,8 @@ export const en: GuestMessages = {
   photoReceived: "Got the photo — your hosts will take a look shortly.",
   voiceReceived: "Got your voice message — we'll listen shortly.",
   fileReceived: "Got the file. If it's urgent, please also send a short text.",
-  writeQuestion: "Please write your question in one message — we'll help.",
-  addCommentPrompt: "Add a comment and we'll pass it to your hosts.",
+  writeQuestion: "✍️ Write your question as a message right here in the chat — we'll help.",
+  addCommentPrompt: "✍️ Write a comment as a message in the chat — we'll pass it to your hosts.",
 
   drovaQuestion: "Bring firewood for the fireplace or the grill?",
   linenQuestion: "What should we bring?",
@@ -83,6 +88,8 @@ export const en: GuestMessages = {
   languageChoose: "Выберите язык / Choose language:",
   languageSet: "Done, switched to English 🇬🇧",
 
+  btnServices: "🛎 Services",
+  btnInfo: "ℹ️ Information",
   btnBack: "⬅️ Back",
   btnConfirmHouse: "✅ Yes, correct",
   btnChangeHouse: "🔁 Another house",
