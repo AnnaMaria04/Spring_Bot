@@ -13,6 +13,7 @@ import {
   assignAdmin,
   updateStatus,
   markDone,
+  addMessage,
 } from "../services/requests";
 import { isAuthorizedActor } from "../services/admins";
 import { resolveEmergencyPhone } from "../services/settings";
@@ -52,8 +53,8 @@ async function guestLang(ctx: MyContext): Promise<Language> {
   return (guest.language as Language) || config.defaultLanguage;
 }
 
-function backKb(lang: Language): InlineKeyboard {
-  return new InlineKeyboard().text(t(lang).btnBack, "menu_back");
+function backKb(lang: Language, target: string = "menu_back"): InlineKeyboard {
+  return new InlineKeyboard().text(t(lang).btnBack, target);
 }
 
 /**
@@ -80,7 +81,20 @@ export async function handleCallback(ctx: MyContext): Promise<void> {
 }
 
 // ── Guest callbacks ─────────────────────────────────────────────
+/** Thin error boundary — button-driven flows had no fallback, unlike typed messages. */
 async function handleGuestCallback(ctx: MyContext, data: string): Promise<void> {
+  try {
+    await handleGuestCallbackInner(ctx, data);
+  } catch (err) {
+    console.error("[callbacks] guest callback error:", err);
+    await ctx.answerCallbackQuery().catch(() => undefined);
+    const lang = await guestLang(ctx).catch(() => config.defaultLanguage);
+    const phone = await resolveEmergencyPhone().catch(() => config.emergencyPhone);
+    await ctx.reply(t(lang).dbError(phone)).catch(() => undefined);
+  }
+}
+
+async function handleGuestCallbackInner(ctx: MyContext, data: string): Promise<void> {
   const lang = await guestLang(ctx);
   const m = t(lang);
 
@@ -108,6 +122,7 @@ async function handleGuestCallback(ctx: MyContext, data: string): Promise<void> 
     }
     const guest = await upsertGuest(ctx.from);
     await startStay(guest.id, house.id);
+    ctx.session.awaitingHouseNumber = false;
     await ctx.answerCallbackQuery();
     await editOrReply(ctx, m.welcome(house.name), { reply_markup: buildMainMenu(lang) });
     return;
@@ -171,11 +186,8 @@ async function handleGuestCallback(ctx: MyContext, data: string): Promise<void> 
     await ctx.answerCallbackQuery();
     if (res.ok) {
       // For technical issues a photo speeds things up (spec recommendation).
-      const extra =
-        category === "broken" && lang === "ru"
-          ? "\n\nЕсли можно, пришлите фото — так быстрее разберёмся."
-          : "";
-      await editOrReply(ctx, res.m.requestReceived + extra);
+      const extra = category === "broken" ? res.m.brokenPhotoHint : "";
+      await editOrReply(ctx, res.m.requestReceived + extra, { reply_markup: backKb(lang) });
     }
     return;
   }
@@ -208,7 +220,7 @@ async function handleCategory(
         formatGuestName(ctx.from?.first_name, ctx.from?.username)
       );
     }
-    await editOrReply(ctx, m.emergency(phone), { reply_markup: backKb(lang) });
+    await editOrReply(ctx, m.emergency(phone), { reply_markup: backKb(lang, "group:info") });
     return;
   }
 
@@ -217,38 +229,38 @@ async function handleCategory(
     const house = await activeHouse(ctx);
     if (house?.wifi_name && house.wifi_password) {
       await editOrReply(ctx, m.wifiInfo(house.wifi_name, house.wifi_password), {
-        reply_markup: backKb(lang),
+        reply_markup: backKb(lang, "group:info"),
       });
     } else {
       await createCategorizedRequest(ctx, {
         category: "wifi",
         summary: "Гость спрашивает данные Wi-Fi.",
       });
-      await editOrReply(ctx, m.wifiMissing);
+      await editOrReply(ctx, m.wifiMissing, { reply_markup: backKb(lang, "group:info") });
     }
     return;
   }
 
   // Info-only: instant auto-answers from property data.
   if (key === "activities") {
-    await editOrReply(ctx, m.activitiesInfo, { reply_markup: backKb(lang) });
+    await editOrReply(ctx, m.activitiesInfo, { reply_markup: backKb(lang, "group:info") });
     return;
   }
   if (key === "checkout") {
     const house = await activeHouse(ctx);
     const text = house?.checkin_info?.trim() || m.checkoutInfo;
-    await editOrReply(ctx, text, { reply_markup: backKb(lang) });
+    await editOrReply(ctx, text, { reply_markup: backKb(lang, "group:info") });
     return;
   }
   if (key === "rules") {
-    await editOrReply(ctx, m.rulesInfo, { reply_markup: backKb(lang) });
+    await editOrReply(ctx, m.rulesInfo, { reply_markup: backKb(lang, "group:info") });
     return;
   }
   if (key === "address") {
     const house = await activeHouse(ctx);
     const address = house?.address?.trim() || PROPERTY.addressFull;
     await editOrReply(ctx, m.addressInfo(address, PROPERTY.coords), {
-      reply_markup: backKb(lang),
+      reply_markup: backKb(lang, "group:info"),
     });
     return;
   }
@@ -316,14 +328,17 @@ async function handleAdminCallback(ctx: MyContext, data: string): Promise<void> 
 
   switch (action) {
     case "take": {
-      if (req.assigned_admin_id && req.assigned_admin_id !== ctx.from.id) {
+      // assignAdmin only succeeds if unassigned or already this admin — the
+      // in-memory `req` could be stale, so trust the DB write, not the read.
+      const updated = await assignAdmin(requestId, ctx.from.id, adminName);
+      if (!updated) {
+        const current = await getRequestById(requestId);
         await ctx.answerCallbackQuery({
-          text: adminText.alreadyTaken(req.assigned_admin_name ?? "другой администратор"),
+          text: adminText.alreadyTaken(current?.assigned_admin_name ?? "другой администратор"),
           show_alert: true,
         });
         return;
       }
-      await assignAdmin(requestId, ctx.from.id, adminName);
       await refreshCard(ctx.api, requestId);
       await ctx.answerCallbackQuery({ text: adminText.takenAck(requestId) });
       return;
@@ -333,14 +348,34 @@ async function handleAdminCallback(ctx: MyContext, data: string): Promise<void> 
       return;
     }
     case "done": {
-      await markDone(requestId, adminName);
+      // markDone only succeeds once (WHERE status != 'done') — if someone
+      // already completed it a moment ago, don't re-notify or overwrite credit.
+      const updated = await markDone(requestId, adminName);
+      if (!updated) {
+        await ctx.answerCallbackQuery({ text: "Уже отмечено как завершённое.", show_alert: true });
+        return;
+      }
       await refreshCard(ctx.api, requestId);
       await ctx.answerCallbackQuery({ text: adminText.markedDone(requestId) });
-      await notifyGuest(ctx, req.guest_id, (m) => m.done);
+      const guestNotified = await notifyGuest(ctx, req.guest_id, (m) => m.done);
+      if (!guestNotified) {
+        await ctx.reply(adminText.guestBlocked, {
+          reply_to_message_id: req.admin_message_id ?? undefined,
+        });
+      }
       const house = await getHouseById(req.house_id);
-      await ctx.reply(adminText.doneWithPhotoHint, {
+      const hint = await ctx.reply(adminText.doneWithPhotoHint, {
         reply_to_message_id: req.admin_message_id ?? undefined,
         message_thread_id: house?.topic_id ?? undefined,
+      });
+      // Track this message too, so a staff reply to the hint itself (not just
+      // the original card) still routes back to this request.
+      await addMessage({
+        requestId,
+        direction: "admin_to_guest",
+        text: adminText.doneWithPhotoHint,
+        mediaType: "text",
+        telegramMessageId: hint.message_id,
       });
       return;
     }
@@ -360,18 +395,20 @@ async function handleAdminCallback(ctx: MyContext, data: string): Promise<void> 
   }
 }
 
-/** Send a localized message to a guest, ignoring delivery failures. */
+/** Send a localized message to a guest. Returns false if delivery failed (e.g. blocked). */
 async function notifyGuest(
   ctx: MyContext,
   guestId: number,
   pick: (m: ReturnType<typeof t>) => string
-): Promise<void> {
+): Promise<boolean> {
   const guest = await getGuestById(guestId);
-  if (!guest) return;
+  if (!guest) return false;
   const m = t((guest.language as Language) || config.defaultLanguage);
   try {
     await ctx.api.sendMessage(guest.telegram_user_id, pick(m));
+    return true;
   } catch (err) {
     console.warn("[callbacks] notifyGuest failed:", (err as Error).message);
+    return false;
   }
 }

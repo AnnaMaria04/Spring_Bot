@@ -86,6 +86,14 @@ export async function handleGuestMessage(ctx: MyContext): Promise<void> {
     }
 
     // Content we can't meaningfully forward (location, contact, poll, ...).
+    // Still abandons any pending ForceReply prompt, same as the text/media
+    // branches above — otherwise it lingers and misfiles the next real message.
+    if (ctx.session.pending?.promptMessageId && ctx.chat) {
+      await ctx.api
+        .deleteMessage(ctx.chat.id, ctx.session.pending.promptMessageId)
+        .catch(() => undefined);
+    }
+    ctx.session.pending = null;
     await ctx.reply(t(lang).unclear, { reply_markup: buildMainMenu(lang) });
   } catch (err) {
     console.error("[guestMessages] error:", err);

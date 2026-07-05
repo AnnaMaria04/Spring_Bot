@@ -194,7 +194,8 @@ export async function postUrgentAlert(
       guestName,
       requestId: req.id,
       message: req.summary ?? "",
-    })
+    }),
+    { message_thread_id: house.topic_id ?? undefined }
   );
   // Record so replies to the urgent alert also route to the guest.
   await requests.addMessage({

@@ -99,7 +99,7 @@ export async function handleSetGroup(ctx: MyContext): Promise<void> {
 
 export async function handleAddAdmin(ctx: MyContext): Promise<void> {
   if (!ctx.from) return;
-  if (!(await isOwner(ctx.from.id))) {
+  if (!(await canManage(ctx))) {
     await ctx.reply(adminText.notAuthorized);
     return;
   }
@@ -127,7 +127,7 @@ export async function handleAddAdmin(ctx: MyContext): Promise<void> {
 
 export async function handleRemoveAdmin(ctx: MyContext): Promise<void> {
   if (!ctx.from) return;
-  if (!(await isOwner(ctx.from.id))) {
+  if (!(await canManage(ctx))) {
     await ctx.reply(adminText.notAuthorized);
     return;
   }

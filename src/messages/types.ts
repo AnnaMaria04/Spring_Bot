@@ -23,6 +23,7 @@ export interface GuestMessages {
   fileReceived: string;
   writeQuestion: string;
   addCommentPrompt: string;
+  brokenPhotoHint: string;
 
   // Service prompts
   drovaQuestion: string;

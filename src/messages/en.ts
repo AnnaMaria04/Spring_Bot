@@ -19,7 +19,9 @@ export const en: GuestMessages = {
   askHouseNumber: "Type your house number as a digit (for example, 1) right here in the chat ⌨️",
   chooseHouseTitle: "Choose your house:",
   houseNotFound: "We couldn't find a house with that number. Please check and type it again.",
-  houseConfirm: (houseName) => `Your house is "${houseName}". Is that correct?`,
+  houseConfirm: (houseName) =>
+    `Looks like you scanned another house's QR code — "${houseName}". ` +
+    `Switch this chat to it? Your current house will become inactive.`,
   scanOrChooseHouse: "Please type your house number so we know where to route your request.",
 
   requestReceived: "Thank you, we've received your request ✅ Your hosts see it and will reply shortly.",
@@ -32,6 +34,7 @@ export const en: GuestMessages = {
   fileReceived: "Got the file. If it's urgent, please also send a short text.",
   writeQuestion: "✍️ Write your question as a message right here in the chat — we'll help.",
   addCommentPrompt: "✍️ Write a comment as a message in the chat — we'll pass it to your hosts.",
+  brokenPhotoHint: "\n\nIf you can, send a photo — it'll help us sort it out faster.",
 
   drovaQuestion: "Bring firewood for the fireplace or the grill?",
   linenQuestion: "What should we bring?",

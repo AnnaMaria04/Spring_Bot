@@ -91,7 +91,12 @@ export function updateStatus(
   );
 }
 
-/** Assign an admin, stamp the take time, and move a new request into progress. */
+/**
+ * Assign an admin, stamp the take time, and move a new request into progress.
+ * Guarded so two staff tapping "Взять" within moments of each other can't
+ * silently steal it from one another — the WHERE clause only lets the first
+ * write through; returns null if someone else already holds it.
+ */
 export function assignAdmin(
   requestId: number,
   adminTelegramId: number,
@@ -104,13 +109,18 @@ export function assignAdmin(
            taken_at = COALESCE(taken_at, now()),
            status = CASE WHEN status = 'new' THEN 'in_progress' ELSE status END,
            updated_at = now()
-     WHERE id = $1
+     WHERE id = $1 AND (assigned_admin_id IS NULL OR assigned_admin_id = $2)
      RETURNING *`,
     [requestId, adminTelegramId, adminName]
   );
 }
 
-/** Mark a request complete, recording who and when. */
+/**
+ * Mark a request complete, recording who and when. Guarded the same way as
+ * assignAdmin — only the first "Готово" tap wins; returns null if it was
+ * already done, so the caller can tell the second staffer instead of
+ * silently overwriting who/when it was completed.
+ */
 export function markDone(
   requestId: number,
   doneByName: string
@@ -118,7 +128,7 @@ export function markDone(
   return queryOne<ServiceRequest>(
     `UPDATE requests
        SET status = 'done', done_at = now(), done_by_name = $2, updated_at = now()
-     WHERE id = $1
+     WHERE id = $1 AND status != 'done'
      RETURNING *`,
     [requestId, doneByName]
   );
@@ -156,7 +166,11 @@ export async function touchRequest(requestId: number): Promise<void> {
 /**
  * Find the request an admin is replying to, given the message they replied to
  * in the admin group. Matches the request card first, then any follow-up /
- * media message recorded for a request.
+ * media message recorded for a request — scoped to the same chat both times,
+ * since Telegram message ids restart per chat (a stale id from a previously
+ * configured admin group could otherwise collide with one in the current
+ * group). Matches either message direction: this also covers the bot's own
+ * admin-side notes (e.g. the "done" photo hint), not just guest messages.
  */
 export async function findRequestByAdminMessage(
   chatId: number,
@@ -169,10 +183,11 @@ export async function findRequestByAdminMessage(
   if (direct) return direct;
 
   const link = await queryOne<{ request_id: number }>(
-    `SELECT request_id FROM messages
-       WHERE direction = 'guest_to_admin' AND telegram_message_id = $1
-       ORDER BY id DESC LIMIT 1`,
-    [messageId]
+    `SELECT m.request_id FROM messages m
+       JOIN requests r ON r.id = m.request_id
+       WHERE m.telegram_message_id = $1 AND r.admin_chat_id = $2
+       ORDER BY m.id DESC LIMIT 1`,
+    [messageId, chatId]
   );
   if (link?.request_id != null) return getRequestById(link.request_id);
   return null;
