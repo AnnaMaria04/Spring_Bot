@@ -70,31 +70,55 @@ function guestName(b: Record<string, unknown>): string {
   return combined || "Гость";
 }
 
-async function authenticate(): Promise<string> {
-  const now = Date.now();
-  if (cachedToken && cachedToken.expiresAt > now + 30_000) return cachedToken.token;
-
-  const res = await fetch(`${BASE}/api/v1/auth`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
-    body: JSON.stringify({ key: config.bnovoApiKey }),
-  });
-  const text = await res.text();
-  if (!res.ok) throw new Error(`auth → HTTP ${res.status}: ${text.slice(0, 300)}`);
-
+function extractToken(text: string): string | undefined {
   let data: Record<string, unknown>;
   try {
     data = JSON.parse(text) as Record<string, unknown>;
   } catch {
-    throw new Error(`auth → non-JSON response: ${text.slice(0, 200)}`);
+    return undefined;
   }
   const nested = (data.data ?? {}) as Record<string, unknown>;
-  const token = (data.access_token ?? data.token ?? data.jwt ?? nested.access_token) as
+  return (data.access_token ?? data.token ?? data.jwt ?? nested.access_token) as
     | string
     | undefined;
+}
+
+async function authRequest(id: string, password: string) {
+  const res = await fetch(`${BASE}/api/v1/auth`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify({ id, password }),
+  });
+  return { res, text: await res.text() };
+}
+
+/**
+ * Bnovo's "Старт" panel gives one copyable string for id + password, joined
+ * with "|" (a base64 secret and a hex account id). Which half is which isn't
+ * documented, so try one order and fall back to the other on 401.
+ */
+async function authenticate(): Promise<string> {
+  const now = Date.now();
+  if (cachedToken && cachedToken.expiresAt > now + 30_000) return cachedToken.token;
+
+  const [a, b] = config.bnovoApiKey.split("|");
+  if (!a || !b) {
+    throw new Error(
+      "BNOVO_API_KEY не похож на пару id|password — проверьте значение в Vercel."
+    );
+  }
+
+  let { res, text } = await authRequest(b, a);
+  if (res.status === 401) {
+    ({ res, text } = await authRequest(a, b));
+  }
+  if (!res.ok) throw new Error(`auth → HTTP ${res.status}: ${text.slice(0, 300)}`);
+
+  const token = extractToken(text);
   if (!token) throw new Error(`auth → token not found: ${text.slice(0, 200)}`);
 
-  cachedToken = { token, expiresAt: now + 50 * 60_000 };
+  // JWT is valid 1 day per Bnovo's docs; refresh a little early.
+  cachedToken = { token, expiresAt: now + 23 * 60 * 60_000 };
   return token;
 }
 
