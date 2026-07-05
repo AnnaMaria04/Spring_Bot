@@ -51,12 +51,16 @@ export async function handleMenu(ctx: MyContext): Promise<void> {
 
 export async function handleHelp(ctx: MyContext): Promise<void> {
   const lang = await guestLang(ctx);
-  await ctx.reply(t(lang).help(await resolveEmergencyPhone()));
+  await ctx.reply(t(lang).help(await resolveEmergencyPhone()), {
+    reply_markup: buildMainMenu(lang),
+  });
 }
 
 export async function handleCall(ctx: MyContext): Promise<void> {
   const lang = await guestLang(ctx);
-  await ctx.reply(t(lang).callInfo(await resolveEmergencyPhone()));
+  await ctx.reply(t(lang).callInfo(await resolveEmergencyPhone()), {
+    reply_markup: buildMainMenu(lang),
+  });
 }
 
 export async function handleLanguage(ctx: MyContext): Promise<void> {
@@ -175,9 +179,9 @@ export async function handleHouses(ctx: MyContext): Promise<void> {
     "/enablehouse <код> [название] — включить / переименовать\n" +
     "/disablehouse <код> — выключить\n\n" +
     "Автоответы гостям:\n" +
-    "/setwifi <код> <сеть> <пароль>\n" +
-    "/setcheckin <код> <текст про заезд/выезд>\n" +
-    "/setaddress <код> <адрес / как добраться>\n\n" +
+    "/setwifi <код> <сеть> <пароль> — сохранить данные Wi-Fi\n" +
+    "/setcheckin <код> <текст> — сохранить текст про заезд/выезд\n" +
+    "/setaddress <код> <адрес> — сохранить адрес / как добраться\n\n" +
     "QR-код для гостей:\n" +
     "/qr <код> — прислать QR-код домика (распечатайте и разместите в домике: гость сканирует и сразу попадает в чат с этим домиком)\n" +
     "/qr all — прислать QR-коды всех активных домиков разом";

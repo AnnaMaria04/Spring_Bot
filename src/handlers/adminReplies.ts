@@ -6,7 +6,7 @@ import {
   findRequestByAdminMessage,
   assignAdmin,
   recordFirstReply,
-  updateStatus,
+  updateStatusIf,
 } from "../services/requests";
 import {
   deliverReplyToGuest,
@@ -74,11 +74,12 @@ export async function handleAdminMessage(ctx: MyContext): Promise<void> {
     // Record response time on first reply. For a normal open request, mark it
     // "waiting_guest" so a slow reply still threads into this request instead
     // of the follow-up window forcing a new one (done/urgent/cancelled are
-    // left alone — see getLatestOpenRequest).
+    // left alone — see getLatestOpenRequest). Guarded on current DB status,
+    // not the possibly-stale `req` read above, so a concurrent "Готово"
+    // (which took real time via the Telegram API call just above) can't be
+    // silently undone by this write landing after it.
     await recordFirstReply(req.id);
-    if (req.status === "new" || req.status === "in_progress") {
-      await updateStatus(req.id, "waiting_guest");
-    }
+    await updateStatusIf(req.id, "waiting_guest", ["new", "in_progress"]);
     await refreshCard(ctx.api, req.id);
     await ctx.react("👍").catch(() => undefined);
   } else {

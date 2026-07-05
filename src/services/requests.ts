@@ -43,30 +43,35 @@ export function getRequestById(id: number): Promise<ServiceRequest | null> {
 const TIME_LIMITED_STATUSES: RequestStatus[] = ["new", "in_progress", "urgent"];
 
 /**
- * The guest's most recent request to fold a follow-up message into, or null
- * to start a fresh one. "waiting_guest" (an admin just replied and is
- * expecting this response) always matches, however long it's been — other
- * open statuses only match within `withinMinutes`. A just-completed request
- * also matches within the longer `doneWithinMinutes` grace window (e.g. a
- * "thanks!" after done shouldn't open a new actionable thread), but that
- * never reopens it — status is left untouched by the caller in that case.
+ * The guest's most recent request *within the given stay* to fold a
+ * follow-up message into, or null to start a fresh one. Scoped to stayId —
+ * otherwise a "waiting_guest" row from a stay the guest already checked out
+ * of would match forever (it has no time limit) and hijack their next,
+ * unrelated stay. "waiting_guest" (an admin just replied and is expecting
+ * this response) always matches within the stay, however long it's been —
+ * other open statuses only match within `withinMinutes`. A just-completed
+ * request also matches within the longer `doneWithinMinutes` grace window
+ * (e.g. a "thanks!" after done shouldn't open a new actionable thread), but
+ * that never reopens it — status is left untouched by the caller in that case.
  */
 export function getLatestOpenRequest(
   guestId: number,
+  stayId: number,
   withinMinutes: number,
   doneWithinMinutes: number
 ): Promise<ServiceRequest | null> {
   return queryOne<ServiceRequest>(
     `SELECT * FROM requests
        WHERE guest_id = $1
+         AND stay_id = $2
          AND (
            status = 'waiting_guest'
-           OR (status = ANY($2) AND updated_at > now() - make_interval(mins => $3))
-           OR (status = 'done' AND updated_at > now() - make_interval(mins => $4))
+           OR (status = ANY($3) AND updated_at > now() - make_interval(mins => $4))
+           OR (status = 'done' AND updated_at > now() - make_interval(mins => $5))
          )
        ORDER BY updated_at DESC
        LIMIT 1`,
-    [guestId, TIME_LIMITED_STATUSES, withinMinutes, doneWithinMinutes]
+    [guestId, stayId, TIME_LIMITED_STATUSES, withinMinutes, doneWithinMinutes]
   );
 }
 
@@ -88,6 +93,24 @@ export function updateStatus(
   return queryOne<ServiceRequest>(
     "UPDATE requests SET status = $2, updated_at = now() WHERE id = $1 RETURNING *",
     [requestId, status]
+  );
+}
+
+/**
+ * Update status only if it's currently one of `fromStatuses`. Guards a
+ * stale in-memory read from clobbering a concurrent transition — e.g. an
+ * admin's reply flipping a request to "waiting_guest" right as someone else's
+ * "Готово" tap lands should not silently undo the completion. Returns null
+ * if the current status no longer matches (nothing to do).
+ */
+export function updateStatusIf(
+  requestId: number,
+  status: RequestStatus,
+  fromStatuses: RequestStatus[]
+): Promise<ServiceRequest | null> {
+  return queryOne<ServiceRequest>(
+    "UPDATE requests SET status = $2, updated_at = now() WHERE id = $1 AND status = ANY($3) RETURNING *",
+    [requestId, status, fromStatuses]
   );
 }
 
@@ -163,14 +186,21 @@ export async function touchRequest(requestId: number): Promise<void> {
   ]);
 }
 
+/** Directions whose telegram_message_id lives in the admin chat's id space
+ *  (guest_to_admin and admin_note are both posted into the admin group) —
+ *  unlike admin_to_guest, whose id lives in the guest's private chat and
+ *  must never be matched against an admin-group message id. */
+const ADMIN_CHAT_DIRECTIONS: MessageDirection[] = ["guest_to_admin", "admin_note"];
+
 /**
  * Find the request an admin is replying to, given the message they replied to
  * in the admin group. Matches the request card first, then any follow-up /
  * media message recorded for a request — scoped to the same chat both times,
  * since Telegram message ids restart per chat (a stale id from a previously
  * configured admin group could otherwise collide with one in the current
- * group). Matches either message direction: this also covers the bot's own
- * admin-side notes (e.g. the "done" photo hint), not just guest messages.
+ * group). Only matches directions whose id space is actually the admin chat;
+ * admin_to_guest ids live in the guest's chat and would risk matching an
+ * unrelated guest's row on a coincidental numeric collision.
  */
 export async function findRequestByAdminMessage(
   chatId: number,
@@ -185,9 +215,9 @@ export async function findRequestByAdminMessage(
   const link = await queryOne<{ request_id: number }>(
     `SELECT m.request_id FROM messages m
        JOIN requests r ON r.id = m.request_id
-       WHERE m.telegram_message_id = $1 AND r.admin_chat_id = $2
+       WHERE m.telegram_message_id = $1 AND r.admin_chat_id = $2 AND m.direction = ANY($3)
        ORDER BY m.id DESC LIMIT 1`,
-    [messageId, chatId]
+    [messageId, chatId, ADMIN_CHAT_DIRECTIONS]
   );
   if (link?.request_id != null) return getRequestById(link.request_id);
   return null;

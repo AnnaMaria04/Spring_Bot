@@ -4,7 +4,9 @@ import { categoryButtonLabel, type CategoryKey } from "../categories";
 import { t } from "../messages";
 import type { House } from "../types";
 
-const SERVICE_KEYS: CategoryKey[] = ["drova", "linen", "cleaning", "gear", "bbq", "broken"];
+// "broken" leads — a maintenance issue is usually more time-sensitive than
+// the routine amenity requests after it.
+const SERVICE_KEYS: CategoryKey[] = ["broken", "drova", "linen", "cleaning", "gear", "bbq"];
 // "call" lives in Info, not on the main screen — it's an escalation, not an
 // everyday action, so it only appears once the guest is already looking for help.
 const INFO_KEYS: CategoryKey[] = ["wifi", "activities", "checkout", "rules", "address", "call"];

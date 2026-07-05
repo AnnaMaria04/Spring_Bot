@@ -81,7 +81,7 @@ CREATE INDEX IF NOT EXISTS idx_requests_admin_msg    ON requests (admin_chat_id,
 CREATE TABLE IF NOT EXISTS messages (
   id                  SERIAL PRIMARY KEY,
   request_id          INTEGER REFERENCES requests(id) ON DELETE CASCADE,
-  direction           TEXT NOT NULL,                  -- guest_to_admin | admin_to_guest
+  direction           TEXT NOT NULL,                  -- guest_to_admin | admin_to_guest | admin_note
   text                TEXT,
   media_type          TEXT,                           -- text | photo | voice | document | video | sticker
   telegram_message_id BIGINT,                         -- message id in the relevant chat

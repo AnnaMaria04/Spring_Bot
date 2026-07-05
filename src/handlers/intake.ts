@@ -9,7 +9,7 @@ import {
   createRequest,
   getLatestOpenRequest,
   touchRequest,
-  updateStatus,
+  updateStatusIf,
 } from "../services/requests";
 import {
   copyGuestMedia,
@@ -19,6 +19,7 @@ import {
 } from "../services/notifications";
 import { resolveEmergencyPhone } from "../services/settings";
 import { promptForHouse } from "./start";
+import { buildMainMenu } from "../keyboards/guestMenu";
 import type { GuestMessages } from "../messages";
 import type { House, RequestStatus, ServiceRequest } from "../types";
 
@@ -82,6 +83,7 @@ export async function intake(ctx: MyContext, opts: IntakeOptions): Promise<void>
     ? null
     : await getLatestOpenRequest(
         guest.id,
+        stay.id,
         config.followupWindowMinutes,
         config.doneFollowupWindowMinutes
       );
@@ -92,8 +94,9 @@ export async function intake(ctx: MyContext, opts: IntakeOptions): Promise<void>
     await touchRequest(req.id);
     // The guest answered while we were waiting on them — ball's back in the
     // admins' court. A "done" request stays done; this only ever un-waits.
-    if (req.status === "waiting_guest") {
-      await updateStatus(req.id, "in_progress");
+    // Guarded on current DB status (not this possibly-stale `req`), so a
+    // concurrent "Готово" can't be silently undone by this write.
+    if (await updateStatusIf(req.id, "in_progress", ["waiting_guest"])) {
       await refreshCard(ctx.api, req.id);
     }
     delivered =
@@ -116,14 +119,29 @@ export async function intake(ctx: MyContext, opts: IntakeOptions): Promise<void>
       formatGuestName(guest.first_name, guest.username)
     );
     delivered = cardMessageId != null;
+    // The card is what actually gets the admin's attention; if it's up but the
+    // attached photo/voice/file specifically failed to copy over, that's a
+    // lesser, logged problem — not worth alarming the guest with "call the
+    // emergency line" when staff already have an actionable ticket.
     if (delivered && isMedia && opts.sourceMessageId) {
-      delivered = await copyGuestMedia(ctx.api, req, house, chat.id, opts.sourceMessageId, opts.mediaType!);
+      const mediaDelivered = await copyGuestMedia(
+        ctx.api,
+        req,
+        house,
+        chat.id,
+        opts.sourceMessageId,
+        opts.mediaType!
+      );
+      if (!mediaDelivered) {
+        console.warn(`[intake] media attach failed for request #${req.id}, card already posted`);
+      }
     }
   }
 
   // Don't tell the guest we've got it if the admin group never actually saw it.
   await ctx.reply(
-    delivered ? confirmation(m, opts.mediaType) : m.genericError(await resolveEmergencyPhone())
+    delivered ? confirmation(m, opts.mediaType) : m.genericError(await resolveEmergencyPhone()),
+    { reply_markup: buildMainMenu(lang) }
   );
 }
 

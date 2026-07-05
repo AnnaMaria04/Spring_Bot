@@ -6,6 +6,7 @@ const GUEST_COMMANDS = [
   { command: "menu", description: "Меню запросов" },
   { command: "help", description: "Помощь" },
   { command: "call", description: "Телефон администратора" },
+  { command: "language", description: "Сменить язык / Change language" },
 ];
 
 /** Staff-facing commands — shown only inside group/supergroup chats. */

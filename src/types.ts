@@ -63,7 +63,10 @@ export interface ServiceRequest {
   updated_at: string;
 }
 
-export type MessageDirection = "guest_to_admin" | "admin_to_guest";
+// "admin_note" is the bot's own admin-group-only content (e.g. the "done"
+// photo-hint) — its telegram_message_id lives in the admin chat, same as
+// guest_to_admin, unlike admin_to_guest whose id lives in the guest's chat.
+export type MessageDirection = "guest_to_admin" | "admin_to_guest" | "admin_note";
 
 export interface MessageRow {
   id: number;

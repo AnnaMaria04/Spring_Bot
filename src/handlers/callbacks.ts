@@ -189,12 +189,14 @@ async function handleGuestCallbackInner(ctx: MyContext, data: string): Promise<v
       if (!res.delivered) {
         // Don't confirm a request the admin group never actually received.
         await editOrReply(ctx, res.m.genericError(await resolveEmergencyPhone()), {
-          reply_markup: backKb(lang),
+          reply_markup: backKb(lang, "group:services"),
         });
       } else {
         // For technical issues a photo speeds things up (spec recommendation).
         const extra = category === "broken" ? res.m.brokenPhotoHint : "";
-        await editOrReply(ctx, res.m.requestReceived + extra, { reply_markup: backKb(lang) });
+        await editOrReply(ctx, res.m.requestReceived + extra, {
+          reply_markup: backKb(lang, "group:services"),
+        });
       }
     }
     return;
@@ -388,10 +390,13 @@ async function handleAdminCallback(ctx: MyContext, data: string): Promise<void> 
         message_thread_id: house?.topic_id ?? undefined,
       });
       // Track this message too, so a staff reply to the hint itself (not just
-      // the original card) still routes back to this request.
+      // the original card) still routes back to this request. It's an
+      // admin-group-only note (not a message to the guest), so it's tagged
+      // "admin_note" — its id lives in the admin chat's id space, same as
+      // guest_to_admin, which is what findRequestByAdminMessage relies on.
       await addMessage({
         requestId,
-        direction: "admin_to_guest",
+        direction: "admin_note",
         text: adminText.doneWithPhotoHint,
         mediaType: "text",
         telegramMessageId: hint.message_id,
