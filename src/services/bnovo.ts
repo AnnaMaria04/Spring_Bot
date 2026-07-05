@@ -127,12 +127,20 @@ async function authenticate(): Promise<string> {
   return token;
 }
 
+/** Add `days` calendar days to a YYYY-MM-DD string (pure UTC date math, no timezone drift). */
+function addDays(dateStr: string, days: number): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
+}
+
 /** Who is currently in the house according to Bnovo (arrival ≤ today < departure). */
 export async function getOccupancy(today: string): Promise<OccupancyResult> {
   if (!config.bnovoApiKey) return { ok: false, error: "BNOVO_API_KEY не задан." };
   try {
     const token = await authenticate();
-    const url = `${BASE}/api/v1/bookings?date_from=${today}&date_to=${today}`;
+    // date_from must be strictly before date_to, and limit/offset are required.
+    const tomorrow = addDays(today, 1);
+    const url = `${BASE}/api/v1/bookings?date_from=${today}&date_to=${tomorrow}&limit=50&offset=0`;
     const res = await fetch(url, {
       headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
     });
