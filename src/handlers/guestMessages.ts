@@ -41,11 +41,12 @@ export async function handleGuestMessage(ctx: MyContext): Promise<void> {
   const msg = ctx.message;
   if (!msg) return;
 
-  // Staff don't get the guest concierge — point them to the admin panel.
-  if (ctx.from && (await isStaffUser(ctx.api, ctx.from.id))) {
-    await ctx.reply(adminText.staffPanel);
-    return;
-  }
+  // TEMP (testing): staff panel redirect disabled so owner/staff accounts can
+  // go through the guest flow themselves. Re-enable by uncommenting below.
+  // if (ctx.from && (await isStaffUser(ctx.api, ctx.from.id))) {
+  //   await ctx.reply(adminText.staffPanel);
+  //   return;
+  // }
 
   const lang = await guestLang(ctx);
 

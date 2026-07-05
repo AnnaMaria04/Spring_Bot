@@ -88,11 +88,12 @@ export async function handleStart(ctx: MyContext): Promise<void> {
   // /start is a guest action; ignore it in the admin group (no session there).
   if (ctx.chat?.type !== "private") return;
 
-  // Staff don't get the guest concierge — show them the admin panel instead.
-  if (await isStaffUser(ctx.api, from.id)) {
-    await ctx.reply(adminText.staffPanel);
-    return;
-  }
+  // TEMP (testing): staff panel redirect disabled so owner/staff accounts can
+  // go through the guest flow themselves. Re-enable by uncommenting below.
+  // if (await isStaffUser(ctx.api, from.id)) {
+  //   await ctx.reply(adminText.staffPanel);
+  //   return;
+  // }
 
   // Fresh start clears any half-finished flow.
   ctx.session.pending = null;
