@@ -3,13 +3,13 @@ import { config } from "../config";
 /**
  * Minimal Bnovo Open API «Старт» client (read-only bookings).
  *
- * The exact request/response shapes are only fully visible from Bnovo's docs
- * (which this build environment can't reach), so this client is deliberately
- * defensive: it tries several common field names and, on any failure, returns
- * a human-readable diagnostic that the /occupancy command surfaces — so the
- * first live test either works or tells us exactly what to adjust.
+ * The exact response shapes are only fully visible from Bnovo's interactive
+ * docs (which this build environment can't reach), so this client is
+ * deliberately defensive: it tries several common field names and, on any
+ * failure, returns a human-readable diagnostic that the /occupancy command
+ * surfaces — so a live test either works or tells us exactly what to adjust.
  */
-const BASE = "https://online.bnovo.ru";
+const BASE = "https://api.pms.bnovo.ru";
 
 let cachedToken: { token: string; expiresAt: number } | null = null;
 
