@@ -218,7 +218,7 @@ async function handleCategory(
     const phone = await resolveEmergencyPhone();
     const res = await createCategorizedRequest(ctx, {
       category: "call",
-      summary: "🚨 Гость запросил срочную связь с администратором.",
+      summary: "🚨 Гость запросил срочную связь с хозяином.",
       status: "urgent",
       priority: "urgent",
     });
@@ -355,7 +355,7 @@ async function handleAdminCallback(ctx: MyContext, data: string): Promise<void> 
       if (!updated) {
         const current = await getRequestById(requestId);
         await ctx.answerCallbackQuery({
-          text: adminText.alreadyTaken(current?.assigned_admin_name ?? "другой администратор"),
+          text: adminText.alreadyTaken(current?.assigned_admin_name ?? "другой хозяин"),
           show_alert: true,
         });
         return;

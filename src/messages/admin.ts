@@ -178,9 +178,9 @@ export const adminText = {
   doneWithPhotoHint:
     "📷 Если хотите показать гостю фото готовой работы (и сохранить его здесь для владельца) — сделайте reply на карточку заявки этой фотографией.",
   groupNotConfigured:
-    "⚠️ Группа администраторов не настроена. Запустите /setgroup в нужной группе.",
+    "⚠️ Группа хозяев не настроена. Запустите /setgroup в нужной группе.",
   setGroupOk: (id: number) =>
-    `✅ Эта группа сохранена как группа администраторов (ID: ${id}).`,
+    `✅ Эта группа сохранена как группа хозяев (ID: ${id}).`,
   whereami: (chatId: number, threadId?: number) =>
     `ID этого чата: ${chatId}` + (threadId ? `\nID темы (topic): ${threadId}` : ""),
   staffPanel:

@@ -5,7 +5,7 @@ const GUEST_COMMANDS = [
   { command: "start", description: "Открыть чат поддержки" },
   { command: "menu", description: "Меню запросов" },
   { command: "help", description: "Помощь" },
-  { command: "call", description: "Телефон администратора" },
+  { command: "call", description: "Телефон хозяина" },
   { command: "language", description: "Сменить язык / Change language" },
 ];
 

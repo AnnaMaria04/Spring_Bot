@@ -89,7 +89,7 @@ export async function handleMyId(ctx: MyContext): Promise<void> {
 export async function handleSetGroup(ctx: MyContext): Promise<void> {
   if (!ctx.chat || !ctx.from) return;
   if (ctx.chat.type === "private") {
-    await ctx.reply("Команду /setgroup нужно отправить в группе администраторов.");
+    await ctx.reply("Команду /setgroup нужно отправить в группе хозяев.");
     return;
   }
   // During first-time setup (no owner configured) allow anyone to claim it.
@@ -126,7 +126,7 @@ export async function handleAddAdmin(ctx: MyContext): Promise<void> {
     return;
   }
   await addAdmin(targetId, username, "admin");
-  await ctx.reply(`✅ Добавлен администратор: ${targetId}${username ? ` (@${username})` : ""}`);
+  await ctx.reply(`✅ Добавлен в команду хозяев: ${targetId}${username ? ` (@${username})` : ""}`);
 }
 
 export async function handleRemoveAdmin(ctx: MyContext): Promise<void> {
@@ -148,7 +148,7 @@ export async function handleRemoveAdmin(ctx: MyContext): Promise<void> {
     return;
   }
   await deactivateAdmin(targetId);
-  await ctx.reply(`✅ Администратор деактивирован: ${targetId}`);
+  await ctx.reply(`✅ Удалён из команды хозяев: ${targetId}`);
 }
 
 // ── House configuration (owner) ─────────────────────────────────
