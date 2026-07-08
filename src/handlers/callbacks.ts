@@ -218,7 +218,7 @@ async function handleCategory(
     const phone = await resolveEmergencyPhone();
     const res = await createCategorizedRequest(ctx, {
       category: "call",
-      summary: "🚨 Гость запросил срочную связь с хозяином.",
+      summary: "🚨 Гость запросил срочную связь с администратором.",
       status: "urgent",
       priority: "urgent",
     });
@@ -240,7 +240,7 @@ async function handleCategory(
     return;
   }
 
-  // Info-only: Wi-Fi (from stored house data, else forward to the hosts).
+  // Info-only: Wi-Fi (from stored house data, else forward to the administrators).
   if (key === "wifi") {
     const house = await activeHouse(ctx);
     if (house?.wifi_name && house.wifi_password) {
@@ -355,7 +355,7 @@ async function handleAdminCallback(ctx: MyContext, data: string): Promise<void> 
       if (!updated) {
         const current = await getRequestById(requestId);
         await ctx.answerCallbackQuery({
-          text: adminText.alreadyTaken(current?.assigned_admin_name ?? "другой хозяин"),
+          text: adminText.alreadyTaken(current?.assigned_admin_name ?? "другой администратор"),
           show_alert: true,
         });
         return;

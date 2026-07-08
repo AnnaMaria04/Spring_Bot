@@ -43,7 +43,7 @@ export const CATEGORIES: Record<CategoryKey, CategoryDef> = {
   rules: { emoji: "📖", ru: "Правила и важное", en: "Rules & info", infoOnly: true },
   address: { emoji: "📍", ru: "Адрес", en: "Address", infoOnly: true },
   other: { emoji: "❓", ru: "Другой вопрос", en: "Other question" },
-  call: { emoji: "📞", ru: "Позвонить хозяину", en: "Call the host" },
+  call: { emoji: "📞", ru: "Позвонить администратору", en: "Call the administrator" },
 };
 
 /** Human-readable label for a category in the given language (no emoji). */

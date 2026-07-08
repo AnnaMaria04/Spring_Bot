@@ -6,7 +6,7 @@ export const en: GuestMessages = {
   welcome: (houseName) =>
     `🌲 Spring Village\n\n` +
     `Welcome to "${houseName}" — your A-frame on the shore of Lake Mikhalyovskoye.\n\n` +
-    `This is a private chat with your hosts. Firewood, towels, the boat, or a recommendation for your stay — ` +
+    `This is a private chat with the administrators. Firewood, towels, the boat, or a recommendation for your stay — ` +
     `just write, and we'll take care of it.\n\n` +
     `How can we help?`,
 
@@ -24,16 +24,16 @@ export const en: GuestMessages = {
     `Switch this chat to it? The previous house will close.`,
   scanOrChooseHouse: "Please type your house number so we know where to route your request.",
 
-  requestReceived: "Thank you, we've received your request ✅ Your hosts see it and will reply shortly.",
+  requestReceived: "Thank you, we've received your request ✅ The administrators see it and will reply shortly.",
   done: "Done ✅ If you need anything else, just write to us here.",
   unclear: "We didn't quite catch that. Pick a menu item or describe it in words — we'll understand.",
   emergency: (phone) =>
-    `If it's urgent, call your host: ${phone}. We've already received your message.`,
-  photoReceived: "Got the photo — your hosts will take a look shortly.",
+    `If it's urgent, call the administrator: ${phone}. We've already received your message.`,
+  photoReceived: "Got the photo — the administrators will take a look shortly.",
   voiceReceived: "Got your voice message — we'll listen shortly.",
-  fileReceived: "Got the file — your hosts will take a look shortly. If it's urgent, please also send a short text.",
+  fileReceived: "Got the file — the administrators will take a look shortly. If it's urgent, please also send a short text.",
   writeQuestion: "✍️ Write your question as a message right here in the chat — we'll help.",
-  addCommentPrompt: "✍️ Write a comment as a message in the chat — we'll pass it to your hosts.",
+  addCommentPrompt: "✍️ Write a comment as a message in the chat — we'll pass it to the administrators.",
   brokenPhotoHint: "\n\nIf you can, send a photo — it'll help us sort it out faster.",
 
   drovaQuestion: "Bring firewood for the fireplace or the grill?",
@@ -45,7 +45,7 @@ export const en: GuestMessages = {
 
   wifiInfo: (name, password) =>
     `📶 Wi-Fi\n\nNetwork: ${name}\nPassword: ${password}\n\nIf it won't connect, write to us and we'll help.`,
-  wifiMissing: "One moment — we'll confirm the Wi-Fi details and send them right over. We've already passed this to your hosts.",
+  wifiMissing: "One moment — we'll confirm the Wi-Fi details and send them right over. We've already passed this to the administrators.",
 
   activitiesInfo:
     "🎣 Things to do\n\n" +
@@ -68,7 +68,7 @@ export const en: GuestMessages = {
     "• Up to 5 guests\n" +
     "• Quiet hours from 23:00 — we protect the calm of the lake and our neighbors\n" +
     `• Deposit ${PROPERTY.deposit} — refunded on check-out\n` +
-    "• Pets (up to 10 kg) — by arrangement with the hosts\n" +
+    "• Pets (up to 10 kg) — by arrangement with the administrators\n" +
     "• Please take care of the house, appliances, and grounds\n\n" +
     "Included: linen & towels, Wi-Fi, parking, firewood, SUP, boat, bikes.\n\n" +
     "Any question — just write, we're always here.",
@@ -78,16 +78,17 @@ export const en: GuestMessages = {
     `The last 2 km is a gravel road along the shore — a regular car handles it fine.`,
 
   dbError: (phone) =>
-    `Sorry, looks like a temporary technical hiccup. If it's urgent, call your host: ${phone}.`,
-  genericError: (phone) => `Sorry, something went wrong. If it's urgent, call your host: ${phone}.`,
+    `Sorry, looks like a temporary technical hiccup. If it's urgent, call the administrator: ${phone}.`,
+  genericError: (phone) =>
+    `Sorry, something went wrong. If it's urgent, call the administrator: ${phone}.`,
 
   help: (phone) =>
     "Spring Village 🌲 — the help chat for your stay.\n\n" +
     "• Pick a menu item or just write what you need.\n" +
     "• You can send a photo or a voice message.\n" +
-    `• Urgent? Call your host: ${phone}.\n\n` +
-    "Commands: /menu — open the menu, /language — change language, /call — host's phone.",
-  callInfo: (phone) => `📞 Host's phone: ${phone}\n\nWe're also always here in the chat.`,
+    `• Urgent? Call the administrator: ${phone}.\n\n` +
+    "Commands: /menu — open the menu, /language — change language, /call — administrator's phone.",
+  callInfo: (phone) => `📞 Administrator's phone: ${phone}\n\nWe're also always here in the chat.`,
   languageChoose: "Выберите язык / Choose language:",
   languageSet: "Done, switched to English 🇬🇧",
 
